@@ -1,0 +1,59 @@
+{
+  "summary": {
+    "total": 1
+  },
+  "test_cases": [
+    {
+      "test_case_id": "Manage_TC_001",
+      "title": "Kiểm tra click nút \"+ Thêm nhân viên\"",
+      "preconditions": [
+        "Đã login vào hệ thống"
+      ],
+      "steps": [
+        {
+          "no": 1,
+          "screen": "",
+          "action": "",
+          "description": "Chọn tab Quản lý",
+          "expected": ""
+        },
+        {
+          "no": 2,
+          "screen": "",
+          "action": "",
+          "description": "chọn menu Quản lý ở panel trái",
+          "expected": ""
+        },
+        {
+          "no": 3,
+          "screen": "",
+          "action": "",
+          "description": "Chọn Phân quyền",
+          "expected": ""
+        },
+        {
+          "no": 4,
+          "screen": "",
+          "action": "",
+          "description": "Chọn Nhóm & Nhân viên",
+          "expected": ""
+        },
+        {
+          "no": 5,
+          "screen": "",
+          "action": "",
+          "description": "Kiểm tra button Thêm nhân viên",
+          "expected": "Button Thêm Nhân viên clickable"
+        }
+      ],
+      "test_data": {},
+      "priority": "High",
+      "tags": [
+        "@smoke",
+        "@regression",
+        "@role-permission"
+      ],
+      "source": "requirement"
+    }
+  ]
+}
