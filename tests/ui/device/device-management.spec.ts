@@ -1,6 +1,6 @@
-import { test } from '../../src/fixtures';
-import { LivePage } from '../../src/pages/livepage/LivePage';
-import { DeviceManagementPage } from '../../src/pages/devicemanagementpage/DeviceManagementPage';
+import { test } from '../../../src/fixtures';
+import { LivePage } from '../../../src/pages/live/LivePage';
+import { DeviceManagementPage } from '../../../src/pages/device/DeviceManagementPage';
 
 /**
  * Điều hướng sang tab Quản lý.

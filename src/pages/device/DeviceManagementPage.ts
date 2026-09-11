@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { BasePage } from 'qc-kit/core';
 import { AddDeviceDialog } from '../../components/AddDeviceDialog';
-import { MainNav } from '../../components/MainNav';
+import { Header } from '../header/Header';
 
 /**
  * Màn hình `Quản lý` — danh sách thiết bị, tại `/vi/devices`.
@@ -9,7 +9,7 @@ import { MainNav } from '../../components/MainNav';
 export class DeviceManagementPage extends BasePage {
   protected override readonly path = '/vi/devices';
 
-  readonly nav = new MainNav(this.page);
+  readonly nav = new Header(this.page);
 
   /**
    * TẠM THỜI: bắt theo tên hiển thị — trang chưa có `data-testid` nào.

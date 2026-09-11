@@ -1,5 +1,5 @@
-import { test } from '../../src/fixtures';
-import { DeviceManagementPage } from '../../src/pages/devicemanagementpage/DeviceManagementPage';
+import { test } from '../../../src/fixtures';
+import { DeviceManagementPage } from '../../../src/pages/device/DeviceManagementPage';
 
 /**
  * Sinh từ `Device_Management_TestCase_v1.0.0.json` — nhóm id `DL` (danh sách & bộ lọc).

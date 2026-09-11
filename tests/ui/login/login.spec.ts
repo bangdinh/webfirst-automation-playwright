@@ -1,7 +1,7 @@
-import { expect, test } from '../../src/fixtures';
-import { LoginPage } from '../../src/pages/loginpage/LoginPage';
-import { SSO_URL } from '../../src/pages/loginpage/SsoLoginPage';
-import { accounts } from '../../src/data/credentials';
+import { expect, test } from '../../../src/fixtures';
+import { LoginPage } from '../../../src/pages/login/LoginPage';
+import { SSO_URL } from '../../../src/pages/login/SsoLoginPage';
+import { accounts } from '../../../src/data/credentials';
 
 /**
  * Đăng nhập — hai bước, hai origin (app → SSO Keycloak → callback về app).
