@@ -1,0 +1,54 @@
+{
+  "summary": {
+    "total": 1
+  },
+  "test_cases": [
+    {
+      "test_case_id": "DT1",
+      "title": "Kiểm tra click nút \"+ Thêm thiết bị\"",
+      "preconditions": [
+        "Đã login vào hệ thống"
+      ],
+      "steps": [
+        {
+          "no": 1,
+          "screen": "add_device_menu",
+          "action": "select",
+          "target": "",
+          "description": "Chọn tab Quản lý >",
+          "expected": ""
+        },
+        {
+          "no": 2,
+          "screen": "add_device_menu",
+          "action": "select",
+          "target": "",
+          "description": "chọn Thiết bị bên panel trái",
+          "expected": ""
+        },
+        {
+          "no": 3,
+          "screen": "add_device_menu",
+          "action": "select",
+          "target": "",
+          "description": "Chọn tab Thiết bị",
+          "expected": ""
+        },
+        {
+          "no": 4,
+          "screen": "add_device_menu",
+          "action": "tap",
+          "target": "them_thiet_bi",
+          "description": "Click nút \"+ Thêm thiết bị\" ở góc trên bên phải",
+          "expected": "Hiển thị menu \"Chọn phương thức thêm\" gồm 2 lựa chọn:\n- Thêm thủ công\n- Tải lên tệp Microsoft Excel"
+        }
+      ],
+      "test_data": {},
+      "priority": "High",
+      "tags": [
+        "@high"
+      ],
+      "source": "requirement"
+    }
+  ]
+}

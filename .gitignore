@@ -1,0 +1,18 @@
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+.env
+.env.*
+!.env.example
+
+# Token Jira cá nhân — xem .claude/skills/jira/SKILL.md
+.jira.env
+!.jira.env.example
+
+.idea/
+.DS_Store
+*.log
