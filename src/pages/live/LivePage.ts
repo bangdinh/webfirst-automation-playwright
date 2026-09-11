@@ -1,5 +1,5 @@
 import { BasePage } from 'qc-kit/core';
-import { MainNav } from '../../components/MainNav';
+import { Header } from '../header/Header';
 
 /**
  * Màn hình `Giám sát / Trực tiếp` — nơi app đưa người dùng tới ngay sau khi đăng nhập.
@@ -10,7 +10,7 @@ import { MainNav } from '../../components/MainNav';
 export class LivePage extends BasePage {
   protected override readonly path = '/vi/live';
 
-  readonly nav = new MainNav(this.page);
+  readonly nav = new Header(this.page);
 
   override async waitUntilLoaded(): Promise<void> {
     // Thanh điều hướng chỉ dựng xong khi app đã nhận session — chờ nó là chờ đúng thời

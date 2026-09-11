@@ -39,6 +39,10 @@ npm run typecheck && npx playwright test
 
 Đọc CHANGELOG của kit trước khi nâng **minor** — pre-1.0 thì minor mang thay đổi phá vỡ.
 
+`sync` **chỉ ghi, không xoá**: skill mà kit đã bỏ vẫn nằm lại trong `.claude/skills/` và
+vẫn được nạp, chồng lên skill mới. Nâng minor thì kiểm `ls .claude/skills/` và xoá tay thư
+mục không còn trong CHANGELOG. Đã dính một lần với `qc-flow` + `testcase-to-spec` → `gen-script`.
+
 ## Cấu trúc
 
 ```
@@ -50,6 +54,7 @@ tests/ui/         spec UI
 
 ## Skills
 
-- **qc-flow** — thêm một màn hình / một luồng / một spec thì làm gì, theo thứ tự nào.
+- **gen-script** — sinh test script: JSON test case → draft → locator thật → chạy verify.
+  Gồm cả chuẩn viết page object và spec, thứ tự ưu tiên locator.
 - **testcase-standard** — một test case phải trông thế nào.
 - **jira** — ghi việc lên Jira; phân biệt bug sản phẩm với lỗi của bộ test.

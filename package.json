@@ -17,7 +17,7 @@
   "devDependencies": {
     "@playwright/test": ">=1.55.0",
     "@types/node": "^26.5.0",
-    "qc-kit": "github:bangdinh/qc-kit#v0.2.0",
+    "qc-kit": "github:bangdinh/qc-kit#feature/RPA-4623-Add-gen-script",
     "typescript": "^5.6.0"
   }
 }

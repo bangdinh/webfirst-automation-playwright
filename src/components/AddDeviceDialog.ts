@@ -8,11 +8,11 @@ import { BaseComponent } from 'qc-kit/core';
  * màn danh sách và **không có URL riêng**. Dựng nó thành `BasePage` thì phải bịa ra một
  * `path`, mà `path` bịa còn tệ hơn locator bịa — nó khiến `open()` điều hướng đi đâu đó.
  *
- * Toàn bộ locator dưới đây chưa có. Lấy locator thật theo skill `qc-flow` rồi xoá marker.
+ * Toàn bộ locator dưới đây chưa có. Lấy locator thật theo skill `gen-script` rồi xoá marker.
  */
 export class AddDeviceDialog extends BaseComponent {
   constructor(page: Page, root: Locator = page.getByTestId('LOCATOR-TBD-add-device-dialog')) {
-    // LOCATOR-TBD: root của dialog (TB2.0 step 1) — lấy locator thật từ DOM, xem skill qc-flow
+    // LOCATOR-TBD: root của dialog (TB2.0 step 1) — lấy locator thật từ DOM, xem skill gen-script
     super(page, root);
   }
 }

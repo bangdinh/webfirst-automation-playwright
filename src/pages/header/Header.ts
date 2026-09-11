@@ -11,7 +11,7 @@ import { BaseComponent } from 'qc-kit/core';
  * chứa hai link `Giám sát`, `Quản lý`. Trang có 3 thẻ `<header>` nên KHÔNG được dùng
  * `page.locator('header')`, sẽ dính strict mode violation.
  */
-export class MainNav extends BaseComponent {
+export class Header extends BaseComponent {
   constructor(page: Page, root: Locator = page.getByRole('banner')) {
     super(page, root);
   }
