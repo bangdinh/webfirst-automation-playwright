@@ -1,12 +1,14 @@
 ---
 name: gen-script
-description: Sinh test script Playwright cho bo test nay - tu JSON test case ra draft script, tim locator that tu DOM, cap nhat vao script, roi chay verify. Gom ca chuan viet page object va spec, thu tu uu tien locator, va cai gi KHONG thuoc repo nay ma thuoc qc-kit. Kich hoat khi user go "Tao script", "Gen script", "/gen-script", khi co file JSON test case can chuyen thanh code, khi them page object hoac spec moi, khi hoi "them man hinh nay the nao" hoac "case nay viet thanh code the nao".
+description: Sinh test script Playwright cho bo test nay - tu JSON test case ra draft script, Kich hoat khi user go "Tao script", "Gen script", "/gen-script"
 ---
 
-# Sinh test script — `__NAME__`
+# Sinh test script — `web-automation`
 
 Skill này do **qc-kit** phát hành. Đừng sửa tại chỗ — nó bị ghi đè ở lần
 `npx qc-kit sync` tiếp theo. Thấy sai thì sửa ở kit rồi nâng version.
+
+## Luật quan trọng: skill này chỉ để dành cho việc generate test script từ file json, KHÔNG tự mở UI thật để chạy
 
 ## Đường ống — năm bước, không đảo
 
@@ -71,6 +73,28 @@ case đó và báo lại, thay vì để cả file trượt vì một case hỏn
 
 ## Bước 2 — Sinh draft script
 
+### Việc đầu tiên: đọc `docs/test-structure.md`
+
+Kit là khuôn dùng chung; **mỗi dự án chia thư mục một kiểu**. Đường dẫn page object,
+cách chia theo khu vực, chỗ đặt spec — kit không biết, và đoán sai thì sinh ra một cây
+thư mục thứ hai nằm cạnh cây đang có.
+
+Nên trước khi ghi bất kỳ file nào:
+
+```bash
+cat docs/test-structure.md
+```
+
+| Tình huống | Xử lý |
+|---|---|
+| Có file, đã điền | Theo nó. Nó thắng mọi ví dụ trong skill này |
+| **Không có file** | **Dừng.** Bảo người dùng `cp docs/test-structure.example.md docs/test-structure.md` rồi điền. Đừng đoán, đừng tự tạo file hộ |
+| Có file nhưng **còn nguyên như bản mẫu** | Cũng dừng. File rỗng nghĩa còn tệ hơn không có: nó trông như đã có luật |
+| Màn hình của case **không có trong bảng ánh xạ** (mục 4) | Hỏi người, không tự tạo thư mục mới |
+
+Mọi đường dẫn trong skill này (`src/pages/…`, `tests/ui/…`) chỉ là **ví dụ minh hoạ cách
+viết class**, không phải luật. Luật nằm ở `docs/test-structure.md` của dự án.
+
 ### Luật số một: JSON KHÔNG nói phần tử nào
 
 Một step chỉ có **một câu `description`**. Hợp đồng không có field cho hành động, cho màn
@@ -100,11 +124,11 @@ Ba tính chất của marker, cả ba đều cố ý:
 
 ### Page object
 
-Một màn hình một class dưới `src/pages/`, kế thừa `BasePage` của kit. Dự án chia
-`src/pages/` theo khu vực thì **giữ đúng cách chia đang có**, đừng dựng cách đặt tên mới.
+Một màn hình một class, kế thừa `BasePage` của kit. **Thư mục, cách chia và quy ước tên
+lấy từ mục 1 và mục 4 của `docs/test-structure.md`** — đừng dựng cách đặt tên mới.
 
-Trước khi tạo class: **kiểm `src/pages/` xem màn hình đó đã có class chưa.** Có rồi thì
-thêm vào class đó, đừng tạo class thứ hai cho cùng một màn hình.
+Trước khi tạo class: **kiểm thư mục page object xem màn hình đó đã có class chưa.** Có rồi
+thì thêm vào class đó, đừng tạo class thứ hai cho cùng một màn hình.
 
 ```ts
 import { expect } from '@playwright/test';
@@ -141,9 +165,10 @@ export class StockPage extends BasePage {
 
 ### Spec
 
-Một file cho mỗi nhóm `test_case_id` cùng tiền tố (`TB1.0`, `TB1.1` → `tb.spec.ts`), đặt
-dưới `tests/ui/` theo đúng cách dự án đang chia. Import từ `src/fixtures`, **không** import
-thẳng `@playwright/test`. Giữ `test_case_id` trong tiêu đề để truy ngược về Excel gốc.
+Thư mục spec, quy tắc "một file cho mỗi cái gì", và quy ước tên: **mục 3 của
+`docs/test-structure.md`**. Đường import lấy ở **mục 5** — vẫn là `test` từ fixture của dự
+án, **không** import thẳng `@playwright/test`. Giữ `test_case_id` trong tiêu đề để truy
+ngược về Excel gốc.
 
 ```ts
 import { expect, test } from '../../src/fixtures';
@@ -268,10 +293,12 @@ Hai nguồn, **theo đúng thứ tự này**. Đảo thứ tự là tự tạo r
 Màn hình này rất có thể đã được implement một phần: một case trước đó đã mở app, đã lấy
 locator thật, và đã ghi vào class. Lấy lại chúng.
 
+Thư mục để soát lấy từ mục 1 và mục 2 của `docs/test-structure.md`:
+
 ```bash
 # class của màn hình đang làm, và mọi component nó dùng
-cat src/pages/<khu vực>/<TênMànHình>.ts
-grep -rnE "readonly |async " src/pages/<khu vực>/ src/components/
+cat <thư mục page object>/<TênMànHình>.ts
+grep -rnE "readonly |async " <thư mục page object>/ <thư mục component>/
 ```
 
 Với **từng** `LOCATOR-TBD` bước 2 vừa sinh, hỏi ba câu theo thứ tự:
@@ -290,46 +317,13 @@ Dùng lại được thì ghi rõ trong báo cáo: locator nào lấy từ class
 đi lấy mới. Đó là thước đo page object đang lớn lên hay đang bị chép lại.
 
 ### 3b. Chưa có thì mở app thật — làm tay
+Quan trọng: skip bước này
 
-Chưa có giải pháp tự động cho phần này. Mở app thật, đọc DOM, ghi lại locator.
+Chưa có giải pháp tự động cho phần này.
 
-```bash
-npx playwright codegen <url của màn hình>
-npm run codegen                        # nếu dự án đã khai script này
-```
-
-Đăng nhập rồi mới thấy màn hình thì dùng lại session của project `setup`
-(`playwright/.auth/user.json`) thay vì đăng nhập lại bằng tay.
-
-Chưa mở app được — không có quyền, môi trường sập, chưa ai build màn hình đó — thì **giữ
-`LOCATOR-TBD` như cũ** và để case ở `test.fixme`. Đó là trạng thái hợp lệ, không phải
-thất bại: draft vẫn grep ra được, và không có locator bịa nào lọt vào.
-
-### Thứ tự ưu tiên locator
-
-1. **`data-testid`** — luôn dùng nếu đã có.
-2. **`id`** / `name` — nếu ổn định (không phải id tự sinh kiểu `r3xk9`).
-3. **class team tự đặt** — không dùng class của UI framework (`ant-btn`…), nó đổi khi
-   upgrade thư viện.
-4. **`getByRole` + tên hiển thị** — nếu tên đổi theo ngôn ngữ thì lấy từ từ điển locale,
-   không hardcode.
-5. **CSS kết hợp** — cuối cùng. **Không XPath.**
-
-Dùng bất kỳ mức nào từ 2–5: ghi comment `TẠM THỜI` ngay tại chỗ, nêu `data-testid` nào
-đang chờ Dev. Đổi lại sau không phải sửa spec, vì spec chỉ gọi method của page object.
-
-Lập phiếu gửi Dev thì tự đặt tên testid theo quy ước của dự án
-(`<module>-<việc>-<loại phần tử>`, ví dụ `device-them-thiet-bi`). Kit **không** còn hàm
-sinh tên này — nó từng suy từ `target`, mà `target` đã bị bỏ khỏi hợp đồng.
 
 ## Bước 4 — Cập nhật locator vào script
-
-```bash
-grep -rn "LOCATOR-TBD" src/ tests/     # danh sách phần tử cần locator thật
-```
-
-Mỗi dòng grep ra là một lần thay. Thay xong locator của một case thì bỏ `test.fixme` của
-chính case đó — đừng bỏ hàng loạt.
+Quan trọng: skip bước này
 
 ## Bước 5 — Verify syntax
 
@@ -360,3 +354,4 @@ Kiểm tra syntax
 | Nghĩ ra case mới | `platform-qc-agent` — **không phải** ở đây |
 | Base class, fixture, helper dùng được cho **mọi** sản phẩm | **qc-kit** — đề xuất ở đó, nâng version |
 | Sửa `.claude/skills/*` | **qc-kit** — bản ở đây là bản sao |
+| Quyết dự án chia thư mục kiểu gì | `docs/test-structure.md` — **dự án** sở hữu, kit chỉ phát hành bản mẫu |

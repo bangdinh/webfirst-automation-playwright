@@ -52,6 +52,11 @@ src/pages/        một màn hình một class, kế thừa BasePage của kit
 tests/ui/         spec UI
 ```
 
+Luật đầy đủ — chia khu vực, quy ước tên, bảng ánh xạ màn hình → thư mục — nằm ở
+[`docs/test-structure.md`](docs/test-structure.md). **Đó là nguồn duy nhất**; skill
+`gen-script` đọc thẳng file đó trước khi sinh code. Đừng mô tả lại cấu trúc ở đây, hai bản
+sẽ lệch nhau.
+
 ## Skills
 
 - **gen-script** — sinh test script: JSON test case → draft → locator thật → chạy verify.

@@ -1,20 +1,21 @@
 import { test } from '../../../src/fixtures';
 import { LivePage } from '../../../src/pages/live/LivePage';
 import { ManagePage } from '../../../src/pages/manage/ManagePage';
+import { RolePage } from '../../../src/pages/manage/RolePage';
 
 /**
  * Sinh từ `testcase/Manage_TestCase_v1.0.0.json` — nhóm id `Manage_TC`.
  *
+ * Đường dẫn file theo `docs/test-structure.md` mục 3 và mục 4.
+ *
  * Precondition "đã login" KHÔNG viết ở đây: project `chromium` nạp sẵn session do project
  * `setup` ghi ra.
  *
- * Case đi theo **đúng đường người dùng thật đi**: mở màn hạ cánh sau đăng nhập rồi bấm
- * qua từng lớp menu, chứ không `goto` thẳng `/vi/groups`. Nhảy URL sẽ cho test xanh trên
- * một màn hình mà người dùng có thể không tới được theo đường đó.
+ * Case đi theo **đúng đường người dùng thật đi** — mở màn hạ cánh sau đăng nhập rồi bấm
+ * qua từng lớp menu. Không `goto` thẳng route đích.
  */
 test.describe('Nhóm & Nhân viên', () => {
-  // Còn 4 LOCATOR-TBD (step 2–5) — chưa chạy được, xem báo cáo của lần sinh.
-  test.fixme('Manage_TC_001 Kiểm tra click nút "+ Thêm nhân viên" @smoke @regression @role-permission', async ({
+  test('Manage_TC_001 Kiểm tra click nút "+ Thêm nhân viên" @smoke @regression @role-permission', async ({
     createPage,
   }) => {
     const live = createPage(LivePage);
@@ -23,16 +24,60 @@ test.describe('Nhóm & Nhân viên', () => {
     await live.open();
     await live.waitUntilLoaded();
 
-    // step 1 — "Chọn tab Quản lý"   (tái dùng Header.moQuanLy, locator đã xác minh)
+    // step 1 — "Chọn tab Quản lý"   (tái dùng Header.moQuanLy)
     await live.nav.moQuanLy();
 
     // step 2 — "chọn menu Quản lý ở panel trái"
-    // step 3 — "Chọn Phân quyền"
     // step 4 — "Chọn Nhóm & Nhân viên"
     await quanLy.moNhomVaNhanVien();
+
+    // step 3 — "Chọn Phân quyền": section này đã mở sẵn. Bấm vào nút đó sẽ ĐÓNG nó lại và
+    // làm mất luôn "Nhóm & Nhân viên", nên step này được kiểm như một trạng thái.
+    await quanLy.expectPhanQuyenDangMo();
 
     // step 5 — "Kiểm tra button Thêm nhân viên"
     // expected: "Button Thêm Nhân viên clickable"  → assertion, không bấm
     await quanLy.expectThemNhanVienClickable();
+  });
+});
+
+test.describe('Vai trò', () => {
+  test('Manage_TC_002 Kiểm tra popup Thêm vai trò @smoke @regression @vaitro', async ({
+    createPage,
+  }) => {
+    const live = createPage(LivePage);
+    const vaiTro = createPage(RolePage);
+
+    await live.open();
+    await live.waitUntilLoaded();
+
+    // step 1 — "Chọn tab Quản lý"
+    await live.nav.moQuanLy();
+
+    // step 2 — "chọn menu Quản lý ở panel trái"
+    await vaiTro.panel.moQuanLy();
+
+    // step 3 — "Chọn Phân quyền": section đã mở sẵn, bấm vào sẽ ĐÓNG nó lại.
+    await vaiTro.expectPhanQuyenDangMo();
+
+    // step 4 — "Chọn vai trò"
+    await vaiTro.panel.moVaiTro();
+    await vaiTro.waitUntilLoaded();
+
+    // step 5 — "Kiểm tra button Thêm vai trò"
+    // expected: "Button Thêm vai trò clickable"  → assertion, không bấm
+    await vaiTro.expectThemVaiTroClickable();
+
+    // step 6 — "Click vào button Thêm vai trò"
+    await vaiTro.moPopupThemVaiTro();
+
+    // step 7 — "Kiểm tra dialog (popup) Thêm vai trò"
+    // expected: "Dialog (popup) Thêm vai trò có hiển thị"
+    await vaiTro.dialogThemVaiTro.expectDangHien();
+
+    // step 8 — "Click button Hủy trên popup Thêm vai trò"
+    // expected: "Popup Thêm vai trò không còn hiển thị"
+    await vaiTro.dialogThemVaiTro.huyBo();
+    await vaiTro.dialogThemVaiTro.expectDaDong();
   });
 });
