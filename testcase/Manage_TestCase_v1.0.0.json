@@ -54,6 +54,79 @@
         "@role-permission"
       ],
       "source": "requirement"
+    },
+    {
+      "test_case_id": "Manage_TC_002",
+      "title": "Kiểm tra popup Thêm vai trò",
+      "preconditions": [
+        "Đã login vào hệ thống"
+      ],
+      "steps": [
+        {
+          "no": 1,
+          "screen": "",
+          "action": "",
+          "description": "Chọn tab Quản lý",
+          "expected": ""
+        },
+        {
+          "no": 2,
+          "screen": "",
+          "action": "",
+          "description": "chọn menu Quản lý ở panel trái",
+          "expected": ""
+        },
+        {
+          "no": 3,
+          "screen": "",
+          "action": "",
+          "description": "Chọn Phân quyền",
+          "expected": ""
+        },
+        {
+          "no": 4,
+          "screen": "",
+          "action": "",
+          "description": "Chọn vai trò",
+          "expected": ""
+        },
+        {
+          "no": 5,
+          "screen": "",
+          "action": "",
+          "description": "Kiểm tra button Thêm vai trò",
+          "expected": "Button Thêm vai trò clickable"
+        },
+        {
+          "no": 6,
+          "screen": "",
+          "action": "",
+          "description": "Click vào button Thêm vai trò",
+          "expected": ""
+        },
+        {
+          "no": 7,
+          "screen": "",
+          "action": "",
+          "description": "Kiểm tra dialog (popup) Thêm vai trò",
+          "expected": "Dialog (popup) Thêm vai trò có hiển thị"
+        },
+        {
+          "no": 8,
+          "screen": "",
+          "action": "",
+          "description": "Click button Hủy trên popup Thêm vai trò",
+          "expected": "Popup Thêm vai trò không còn hiển thị"
+        }
+      ],
+      "test_data": {},
+      "priority": "High",
+      "tags": [
+        "@smoke",
+        "@regression",
+        "@vaitro"
+      ],
+      "source": "requirement"
     }
   ]
 }

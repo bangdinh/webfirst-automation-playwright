@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
-import { STORAGE_STATE } from 'qc-kit/config';
-import { BasePage, saveSession, type Authenticator } from 'qc-kit/core';
+import { BasePage } from 'qc-kit/core';
+import { STORAGE_STATE, saveSession, type Authenticator } from '../../core';
 import { SsoLoginPage } from './SsoLoginPage';
 
 /**
@@ -20,7 +20,14 @@ import { SsoLoginPage } from './SsoLoginPage';
 const VI = {
   continue: 'Tiếp tục',
   demo: 'Dùng thử bản demo',
+  companyPlaceholder: 'Ví dụ: FPT',
   wrongCompany: 'Mã doanh nghiệp không đúng',
+  /**
+   * Đã đối chiếu DOM thật. Lưu ý cho ai đọc lại file test case: chuỗi ở đây KHÁC với
+   * `expected` của AUTH1.1 ("Nhập Company ID để tiếp tục.") — DOM mới là nguồn đúng, file
+   * test case cần sửa theo.
+   */
+  companyRequired: 'Vui lòng nhập mã doanh nghiệp',
 } as const;
 
 export interface LoginCredentials {
@@ -56,6 +63,34 @@ export class LoginPage extends BasePage {
    */
   readonly alert = this.page.locator('#company-error');
 
+  /**
+   * Tiêu đề "Tài khoản doanh nghiệp" (AUTH1.0 step 2). Lấy từ DOM thật.
+   *
+   * TẠM THỜI: `//h1` không nói đây là tiêu đề NÀO — trang có thêm một `<h1>` thứ hai là
+   * strict mode violation, và lỗi đó trông không liên quan gì tới nguyên nhân.
+   * Chờ Dev gắn `data-testid="login-company-heading"`.
+   */
+  readonly heading = this.page.locator('//h1');
+
+  /**
+   * 3 nút tải app Google Play / Apple Store / Windows (AUTH1.0 step 2). Lấy từ DOM thật.
+   *
+   * TẠM THỜI: khớp theo TEXT, mà URL của app có prefix locale (`/vi/`) — đổi ngôn ngữ là
+   * locator này khớp 0 phần tử và `toHaveCount(3)` đỏ vì lý do không liên quan tới bug.
+   * `text()=` cũng là khớp tuyệt đối trên một text node, nên span có markup lồng bên
+   * trong sẽ trượt. Chờ Dev gắn `data-testid="login-app-download"`.
+   */
+  readonly appDownloadButtons = this.page.locator(
+    "//span[text()='Google Play' or text()='Apple Store' or text()='Windows']",
+  );
+
+  /**
+   * Dòng copyright ở footer (AUTH1.0 step 2). Lấy từ DOM thật.
+   *
+   * TẠM THỜI: cũng khớp theo text như trên. Chờ Dev gắn `data-testid="login-copyright"`.
+   */
+  readonly copyright = this.page.locator("//span[contains(text(),'Copyright')]");
+
   override async waitUntilLoaded(): Promise<void> {
     await expect(this.company).toBeEditable();
   }
@@ -80,6 +115,19 @@ export class LoginPage extends BasePage {
       await this.company.fill(company);
       await this.clickWhenReady(this.continueButton);
       return new SsoLoginPage(this.page);
+    });
+  }
+
+  /**
+   * Gửi form bước 1 mà KHÔNG hứa hẹn đi tiếp.
+   *
+   * `submitCompany()` trả về `SsoLoginPage` vì nó phục vụ đường thành công. Case validate
+   * (AUTH1.1, AUTH1.2) ở lại đúng màn này, nên trả về một page object của màn sau là nói dối.
+   */
+  async trySubmitCompany(company: string): Promise<void> {
+    await this.step(`gửi mã doanh nghiệp "${company || '(để trống)'}"`, async () => {
+      await this.company.fill(company);
+      await this.clickWhenReady(this.continueButton);
     });
   }
 
@@ -121,10 +169,43 @@ export class LoginPage extends BasePage {
     await expect(this.page).not.toHaveURL(/\/login/);
   }
 
-  async expectWrongCompany(): Promise<void> {
+  /** AUTH1.0 — màn vừa mở phải có đủ thành phần. Mọi locator ở đây đã là locator thật. */
+  async expectDefaultLayout(): Promise<void> {
+    await this.step('màn Mã doanh nghiệp hiển thị đủ thành phần', async () => {
+      await expect(this.heading).toBeVisible();
+      await expect(this.company).toBeEditable();
+      await expect(this.company).toHaveAttribute('placeholder', VI.companyPlaceholder);
+      await expect(this.continueButton).toBeVisible();
+      await expect(this.demoButton).toBeVisible();
+      await expect(this.appDownloadButtons).toHaveCount(3);
+      await expect(this.copyright).toBeVisible();
+    });
+  }
+
+  /**
+   * AUTH1.1 — bỏ trống thì chặn ngay ở client.
+   *
+   * Vế "KHÔNG gọi API" của expected không assert được từ page object: nó là chuyện của
+   * network trong một khoảng thời gian, không phải trạng thái của màn hình. Spec đếm
+   * request và assert ở đó.
+   */
+  async expectCompanyRequired(): Promise<void> {
+    await this.step('ô Mã doanh nghiệp báo thiếu và được focus lại', async () => {
+      await expect(this.alert).toHaveText(VI.companyRequired);
+      await expect(this.company).toBeFocused();
+    });
+  }
+
+  /**
+   * Mã sai. Truyền `entered` khi case còn đòi giữ nguyên giá trị đã gõ và focus lại ô
+   * (AUTH1.2) — không truyền thì chỉ kiểm thông báo, như những chỗ gọi cũ.
+   */
+  async expectWrongCompany(entered?: string): Promise<void> {
     await expect(this.alert).toHaveText(VI.wrongCompany);
     // Ô nhập cũng phải được đánh dấu sai — thông báo lỗi mà không gắn `aria-invalid`
     // là lỗi accessibility, và người dùng screen reader không biết ô nào hỏng.
     await expect(this.company).toHaveAttribute('aria-invalid', 'true');
+    if (entered === undefined) return;
+    await expect(this.company).toHaveValue(entered);
   }
 }

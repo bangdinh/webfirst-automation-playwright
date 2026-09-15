@@ -1,6 +1,6 @@
 ---
 name: gen-script
-description: Sinh test script Playwright cho bo test nay - tu JSON test case ra draft script, Kich hoat khi user go "Tao script", "Gen script", "/gen-script"
+description: Sinh test script Playwright cho bo test nay - tu MOT file JSON test case trong thu muc testcase/ cua repo ra draft script, theo luat o docs/test-structure.md va docs/test-data.md. Khi goi BAT BUOC kem ten file, vi du "/gen-script Manage_Testcase.json" - khong co ten file thi dung lai va hoi. Kich hoat khi user go "Tao script", "Gen script", "/gen-script <ten-file>.json"
 ---
 
 # Sinh test script — `web-automation`
@@ -10,24 +10,61 @@ Skill này do **qc-kit** phát hành. Đừng sửa tại chỗ — nó bị ghi
 
 ## Luật quan trọng: skill này chỉ để dành cho việc generate test script từ file json, KHÔNG tự mở UI thật để chạy
 
-## Đường ống — năm bước, không đảo
+## Đường ống — một cổng vào, sáu bước, không đảo
 
 | | Bước | Trạng thái |
 |---|---|---|
+| 0 | **tên file JSON** người dùng đưa → chốt đúng một file trong `testcase/` | **cổng chặn** |
 | 1 | JSON test case → đọc, đếm case | tự động |
-| 2 | → **draft script** (page object + spec, lỗ locator đánh dấu) | tự động |
+| 2 | → **draft script** theo luật ở `docs/test-structure.md` + `docs/test-data.md` | tự động |
 | 3 | → **tìm locator thật**: page object có sẵn trước, DOM sau | 3a tự động · 3b **làm tay** |
-| 4 | → cập nhật locator vào script, bỏ `fixme` | tự động |
+| 4 | → cập nhật locator vào script, test chuyển từ đỏ sang xanh | tự động |
 | 5 | → chạy verify | tự động |
+| 6 | → **ghi file summary**: còn nợ gì, ở class nào, vì sao | tự động |
 
 Bước **3b** là chỗ duy nhất bắt buộc có người — và chỉ khi 3a không tìm thấy sẵn. Đừng cố
 nhảy qua nó bằng cách đoán; lý do ở mục dưới.
 
 ---
 
+## Bước 0 — Tên file JSON, bắt buộc
+
+Skill này **chỉ chạy khi người dùng đưa tên file**:
+
+```
+/gen-script Manage_Testcase.json
+/gen-script Testcase_Authentication_v1.0.0_part1.json
+```
+
+File phải nằm trong thư mục **`testcase/` của repo này**. Đó là chỗ duy nhất được tìm.
+
+```bash
+ls testcase/*.json
+```
+
+| Tình huống | Xử lý |
+|---|---|
+| Gõ `/gen-script` **không kèm tên file** | **Dừng.** `ls testcase/*.json`, liệt kê ra, hỏi người dùng chọn file nào. Không tự chọn — kể cả khi chỉ có đúng một file |
+| Tên file thiếu đuôi `.json` | Thêm `.json` rồi tìm lại. Vẫn không thấy thì dừng |
+| Tên gõ gần đúng (sai hoa thường, thiếu version) | Không tự sửa hộ. Liệt kê file gần giống trong `testcase/` rồi hỏi đúng một lần |
+| **Không có file đó trong `testcase/`** | **Dừng**, liệt kê những file đang có. Không tìm ra ngoài thư mục đó, không dùng file của repo khác |
+| Đường dẫn tuyệt đối, hoặc có `..` trỏ ra ngoài repo | **Từ chối.** Test case là đầu vào của chính bộ test này; file ngoài repo không chạy lại được ở máy người khác lẫn trên CI |
+| Người dùng đưa **nhiều file** | Chạy tuần tự, mỗi file một vòng sáu bước trọn vẹn — kể cả file summary riêng. Không gộp nhiều file vào một lần sinh |
+| Thư mục `testcase/` không tồn tại | Dừng và nói rõ: chưa có đầu vào nào để sinh. Đừng tự tạo thư mục |
+
+Vì sao chặn ở đây thay vì đoán: sinh script từ nhầm file test case không hỏng ngay — nó ra
+một bộ spec trông hợp lý cho sai màn hình, và người đọc chỉ phát hiện sau khi đã sửa
+locator bằng tay xong. Một câu hỏi rẻ hơn nhiều so với việc đó.
+
+Chốt xong thì nói ra đúng một dòng, rồi mới sang bước 1:
+
+```
+Dùng testcase/Manage_Testcase.json
+```
+
 ## Bước 1 — Đọc JSON
 
-Đầu vào là file do `convertExcelToTestCases()` của kit sinh ra:
+Đầu vào là **đúng file đã chốt ở bước 0** — do `convertExcelToTestCases()` của kit sinh ra:
 
 ```json
 {
@@ -55,10 +92,10 @@ những file hoàn toàn dùng được.
 Việc của bước này đúng hai dòng: đọc file, và **báo có bao nhiêu test case**.
 
 ```
-Đọc testcase/Device_Management_TestCase_v1.0.0.json — 21 test case
+Đọc testcase/Manage_Testcase.json — 21 test case
 ```
 
-Nếu file không đọc/parse được (sai cú pháp JSON, không thấy đường dẫn) thì dừng và nói rõ
+Nếu file không parse được (sai cú pháp JSON) thì dừng và nói rõ
 lỗi. Đó là hỏng thật, không phải chuyện schema.
 
 Rồi **gom case theo màn hình**. Hợp đồng không còn field `screen`, nên việc gom dựa vào
@@ -73,7 +110,7 @@ case đó và báo lại, thay vì để cả file trượt vì một case hỏn
 
 ## Bước 2 — Sinh draft script
 
-### Việc đầu tiên: đọc `docs/test-structure.md`
+### Việc đầu tiên: đọc HAI file luật của dự án
 
 Kit là khuôn dùng chung; **mỗi dự án chia thư mục một kiểu**. Đường dẫn page object,
 cách chia theo khu vực, chỗ đặt spec — kit không biết, và đoán sai thì sinh ra một cây
@@ -82,18 +119,69 @@ thư mục thứ hai nằm cạnh cây đang có.
 Nên trước khi ghi bất kỳ file nào:
 
 ```bash
-cat docs/test-structure.md
+cat docs/test-structure.md docs/test-data.md
 ```
+
+Hai file, hai câu hỏi, cùng một lý do tồn tại — đó là hai chỗ generator sẽ **đoán** nếu
+không ai khai:
+
+| File | Trả lời | Đoán sai thì |
+|---|---|---|
+| `test-structure.md` | thư mục chia thế nào, màn nào ứng với class nào | sinh ra một cây thư mục thứ hai nằm cạnh cây đang có |
+| `test-data.md` | có sẵn trạng thái dữ liệu nào, lấy ở đâu, reset ra sao | tự bịa tên biến `.env` cho một tài khoản chưa ai cấp |
 
 | Tình huống | Xử lý |
 |---|---|
-| Có file, đã điền | Theo nó. Nó thắng mọi ví dụ trong skill này |
-| **Không có file** | **Dừng.** Bảo người dùng `cp docs/test-structure.example.md docs/test-structure.md` rồi điền. Đừng đoán, đừng tự tạo file hộ |
-| Có file nhưng **còn nguyên như bản mẫu** | Cũng dừng. File rỗng nghĩa còn tệ hơn không có: nó trông như đã có luật |
-| Màn hình của case **không có trong bảng ánh xạ** (mục 4) | Hỏi người, không tự tạo thư mục mới |
+| Có cả hai file, đã điền | Theo chúng. Chúng thắng mọi ví dụ trong skill này |
+| **Thiếu một trong hai** | **Dừng.** Bảo người dùng `cp docs/<tên>.example.md docs/<tên>.md` rồi điền. Đừng đoán, đừng tự tạo file hộ |
+| File có nhưng **còn nguyên như bản mẫu** | Cũng dừng. File rỗng nghĩa còn tệ hơn không có: nó trông như đã có luật |
+| Màn hình của case **không có trong bảng ánh xạ** (`test-structure.md` mục 4) | Hỏi người, không tự tạo thư mục mới |
+| Case cần một **profile dữ liệu chưa khai** trong `test-data.md` | `DATA-TBD` + `test.skip(...)` — xem mục dưới |
 
-Mọi đường dẫn trong skill này (`src/pages/…`, `tests/ui/…`) chỉ là **ví dụ minh hoạ cách
-viết class**, không phải luật. Luật nằm ở `docs/test-structure.md` của dự án.
+Mọi đường dẫn (`src/pages/…`, `tests/ui/…`) và mọi tên biến `.env` trong skill này chỉ là
+**ví dụ minh hoạ**, không phải luật. Luật nằm ở hai file trên của dự án.
+
+### Trạng thái dữ liệu — bốn luật
+
+Phần lớn case không-phải-happy-path kiểm một TRẠNG THÁI mà bộ test không tự tạo được: tài
+khoản bị khoá, gói đã hết hạn, đơn đã huỷ, người dùng chưa có quyền. `preconditions` và
+`expected` nói ra trạng thái đó; `docs/test-data.md` nói nó có sẵn hay chưa.
+
+**1. Đọc profile, đừng đặt tên biến.**
+Case cần trạng thái nào thì tra bảng profile ở mục 1 của `test-data.md` và dùng đúng key
+nó khai. **Không bao giờ tự nghĩ ra một tên biến `.env`** — biến bạn bịa sẽ không ai cấp,
+case sẽ `skip` vĩnh viễn, và người đọc summary không biết cái tên đó từ đâu ra.
+
+**2. Chưa khai thì dừng case đó, không dừng cả file.**
+
+```ts
+// DATA-TBD: cần tài khoản ở trạng thái "đã khoá" — chưa có profile nào trong
+// docs/test-data.md. Case vẫn BẬT; `test.skip` bên dưới chặn nó khi chưa có dữ liệu, nên
+// nó hiện ra là "skipped" kèm lý do chứ không đỏ bừa.
+test('TB2.9 tài khoản bị khoá thì báo lỗi @high', async ({ createPage }) => {
+  test.skip(true, 'DATA-TBD: chưa có profile "locked" trong docs/test-data.md');
+```
+
+**3. Profile đánh dấu PHÁ HUỶ kéo theo hai nghĩa vụ.**
+Test làm đổi trạng thái của chính dữ liệu nó dùng thì:
+
+- Mọi case dùng chung profile đó gói trong một `describe` chạy **`serial`** — chạy song
+  song thì chúng dẫm lên trạng thái của nhau và không case nào còn đúng.
+- Chép **cột "reset bằng"** của profile vào summary. Không có nó, người chạy lần hai thấy
+  test đỏ mà không biết đỏ vì môi trường hay vì sản phẩm.
+
+**4. Kênh ngoài chưa khai thì không sinh.**
+Case cần đọc hộp thư, sinh mã TOTP, nhận SMS — nếu mục 2 của `test-data.md` chưa khai kênh
+đó thì đánh `DATA-TBD` và dừng. Sinh một test không có đường lấy dữ liệu là sinh một test
+không bao giờ chạy được, mà lại trông như đã xong.
+
+Ba marker, cùng một họ — grep được, fail to, truy được nguồn:
+
+| Marker | Thiếu cái gì | Nguy hiểm riêng |
+|---|---|---|
+| `LOCATOR-TBD` | phần tử trên DOM | — |
+| `ENDPOINT-TBD` | đường dẫn API để chặn/kiểm | route không khớp → **xanh giả** |
+| `DATA-TBD` | trạng thái dữ liệu, hoặc kênh ngoài | case `skip` im lặng nếu bịa tên biến |
 
 ### Luật số một: JSON KHÔNG nói phần tử nào
 
@@ -256,10 +344,33 @@ thì chưa biết, và bước 3 chính là chỗ trả lời. Viết `LOCATOR-T
 bước dẫn đường không có kết quả quan sát riêng. Chuỗi step chỉ điều hướng ở đầu case là
 **precondition**, không phải hành động — đừng dịch từng câu văn xuôi thành một `await`.
 
-### Case có `LOCATOR-TBD` thì `test.fixme()`
+### Case có `LOCATOR-TBD` vẫn BẬT, không `test.fixme()`
 
-Kèm lý do. Nó hiện ra là "đã bỏ qua" trong report — nhìn thấy được, mà không nhuộm đỏ
-suite.
+Thiếu locator **không** phải lý do tắt case. Cứ để nó chạy: selector `LOCATOR-TBD-*` không
+khớp gì, test đỏ, và thông báo lỗi chứa nguyên chuỗi `LOCATOR-TBD` nên đọc là biết ngay
+phải đi lấy locator nào. Đó chính là tính chất **fail to** mà marker sinh ra để có.
+
+Vì sao không tắt: một case `fixme` là một case **không ai nhìn**. Nó nằm im trong mục
+"skipped" hàng tháng trời, và không ai biết ngoài locator ra nó còn sai gì nữa — locator
+đúng rồi, bỏ `fixme`, mới phát hiện thêm ba chỗ khác hỏng. Để nó đỏ thì mọi vấn đề lộ ra
+cùng một lúc, ở lần chạy đầu tiên.
+
+Trong thực tế phần lớn case như vậy sẽ **skip** chứ không đỏ, vì chúng còn vướng
+`test.skip(...)` do thiếu dữ liệu. Chỉ case đã đủ dữ liệu mới thật sự đỏ — và đó đúng là
+case đáng đỏ.
+
+**Một ngoại lệ: `ENDPOINT-TBD` thì VẪN `test.fixme()`.**
+
+| Marker | Bật hay tắt | Vì sao |
+|---|---|---|
+| `LOCATOR-TBD` | **bật** | selector không khớp → đỏ, thông báo tự tố cáo |
+| `DATA-TBD` | **bật** | đã có `test.skip(...)` chặn khi thiếu dữ liệu → skip, không đỏ bừa |
+| `ENDPOINT-TBD` | **`fixme`** | route không khớp thì request đi bình thường và test có thể **XANH GIẢ** |
+
+Khác biệt nằm ở chỗ hỏng thế nào. Locator sai thì đỏ — đỏ là thông tin. Đường dẫn route
+sai thì `page.route` không chặn gì, app chạy đường thành công, assertion "có toast" vẫn
+đúng, và bạn nhận một dấu tích xanh cho một case chưa từng được kiểm. Đó là thứ tệ hơn cả
+không có test.
 
 ### Khi nào KHÔNG sinh
 
@@ -271,6 +382,8 @@ không chặn cả file.
 | `source: "inferred"` | Không đưa vào bộ chạy. Giả định chưa ai xác nhận — luật ở `testcase-standard` |
 | `description` không đọc ra hành động nào | Mơ hồ, mô tả trạng thái, hoặc hai việc trong một dòng → bỏ case, trích nguyên văn câu đó |
 | Không biết case thuộc màn hình nào | **Không tạo page object mới**, hỏi người |
+| Case cần một **profile dữ liệu chưa khai** trong `docs/test-data.md` | `DATA-TBD` + `test.skip(true, ...)`, case vẫn bật, ghi profile còn thiếu vào summary. **Không tự đặt tên biến `.env`** |
+| Case cần **kênh ngoài** (hộp thư · TOTP · SMS) chưa khai ở mục 2 của `test-data.md` | `DATA-TBD` + `test.skip(true, ...)` — không có đường lấy dữ liệu thì test chưa chạy được, nhưng vẫn nằm trong danh sách |
 | `steps` rỗng | Không có gì để sinh, bỏ qua và báo lại |
 | `expected` của step cuối rỗng | Case không khẳng định điều gì → bỏ qua và báo lại |
 | `expected` kiểu "Theo design", "Đúng UI" | Kiểm thị giác, không phải assertion chức năng → `test.fixme` |
@@ -281,6 +394,9 @@ Sinh được bao nhiêu case **trên tổng số đọc được ở bước 1*
 nằm ở đâu, case nào bị bỏ vì lý do gì trong bảng trên. Hai con số đó phải khớp nhau: mỗi
 case không sinh đều có một dòng lý do. **Đừng nói "đã xong" khi còn TBD** — draft chưa
 phải script chạy được.
+
+Đây là bản nói trong chat. Bản ghi ra đĩa là **bước 6**, và nó mới là bản còn lại sau khi
+phiên chat đóng.
 
 ---
 
@@ -331,7 +447,90 @@ Quan trọng: skip bước này
 npm run typecheck
 ```
 
-Kiểm tra syntax 
+Kiểm tra syntax
+
+---
+
+## Bước 6 — Ghi file summary
+
+Sau một lượt sinh, mỗi case rơi vào một trong bốn trạng thái:
+
+| Trạng thái | Nghĩa là | Trong report |
+|---|---|---|
+| **xanh** | đủ locator, đủ dữ liệu | passed |
+| **đỏ — chờ locator** | có code, `LOCATOR-TBD` chưa lấy xong | failed, thông báo chứa `LOCATOR-TBD` |
+| **skip — chờ dữ liệu** | có code, `DATA-TBD` hoặc thiếu key `.env` | skipped, kèm lý do |
+| **bỏ** | không sinh dòng nào | không có trong report |
+
+Bốn trạng thái đó là công việc còn nợ — mà nói trong chat thì chúng biến mất cùng phiên
+chat, còn đọc code thì phải mở năm file mới ghép lại được bức tranh.
+
+**"Đỏ — chờ locator" là bình thường ở lượt sinh đầu tiên**, không phải sự cố. Đừng tắt
+chúng đi cho report sạch: một suite sạch vì đã giấu việc còn nợ là một suite nói dối.
+
+Nên ghi ra đĩa. **Một file JSON đầu vào → một file summary**, ghi đè mỗi lần chạy lại:
+
+```
+testcase/summary/<tên file json, bỏ đuôi .json>.md
+```
+
+`testcase/Manage_Testcase.json` → `testcase/summary/Manage_Testcase.md`.
+
+### Khuôn
+
+````markdown
+# Gen-script — Manage_Testcase
+
+Nguồn `testcase/Manage_Testcase.json` · 8 case · sinh 6, bỏ 2 · typecheck: xanh
+2 xanh · 4 đỏ chờ locator · 0 skip chờ dữ liệu
+
+## Trạng thái từng case
+
+| Case | Trạng thái | Vì sao |
+|---|---|---|
+| TB1.1 | xanh | — |
+| TB1.0 | đỏ — chờ locator | `StockPage.heading` · `StockPage.appDownload` |
+| TB1.4 | bỏ | step 2 "Xác thực qua IdP" không đọc ra hành động |
+
+## Việc còn nợ — locator phải lấy từ DOM
+
+| Class | Field | Phần tử cần tìm | Case cần |
+|---|---|---|---|
+| `StockPage` | `heading` | tiêu đề "Kho hàng" | TB1.0 |
+| `StockPage` | `appDownload` | 3 nút tải app ở footer | TB1.0 |
+
+## Việc còn nợ — dữ liệu
+
+| Profile cần | Trạng thái | Case cần | Ghi chú |
+|---|---|---|---|
+| `locked` | tài khoản đã bị khoá | TB2.9 | chưa khai trong `docs/test-data.md` |
+| `mailbox` | hộp thư có API | TB3.3 | kênh ngoài, chưa chốt công cụ |
+
+Profile PHÁ HUỶ đã dùng thì chép luôn cột "reset bằng" vào đây — người chạy lần hai cần nó.
+
+## Cần người quyết
+
+- Màn "Xác thực mã" chưa có trong bảng ánh xạ mục 4 — thêm page object hay bỏ case?
+- Chuỗi "Tài khoản đã bị khóa" lấy từ test case, chưa đối chiếu DOM.
+
+## File đã đụng
+
+- `src/pages/StockPage.ts` — thêm 2 locator TBD, 1 method
+- `tests/ui/stock/tb.spec.ts` — mới, 6 test
+````
+
+### Luật
+
+| | |
+|---|---|
+| **Mỗi case đúng một dòng** | Số dòng phải bằng số case đọc ở bước 1. Thiếu một dòng là giấu một case |
+| **Lý do phải hành động được** | "thiếu locator: tiêu đề màn, nút tải app" — không phải "chưa hoàn thiện", không phải "cần bổ sung" |
+| **Nói rõ class nào, field nào** | Người đi lấy locator cần biết mở file nào, sửa dòng nào. Một bảng không có cột class là một bảng phải tự đi tìm lại |
+| **Ngắn** | Không chép lại `description`, không chép code. Người đọc mở file gốc là thấy — summary chỉ trả lời "còn nợ gì" |
+| **Ghi cả kết quả bước 5** | Typecheck đỏ mà summary ghi xanh thì file này hỏng ngay ở lần dùng đầu tiên |
+| **Chỉ ghi đè summary của chính file đang chạy** | Chạy `part2` thì không đụng `part1.md`. Mỗi suite giữ lịch sử của nó |
+
+Ghi xong thì nói ra đường dẫn file. Đó là dòng cuối của một lượt sinh.
 
 ---
 
@@ -340,10 +539,19 @@ Kiểm tra syntax
 - **`page.waitForTimeout`** trong code đã commit. Dựa vào auto-waiting và web-first
   assertion.
 - **Đăng nhập trong `beforeEach`.** Session do project `setup` lo, một lần cho cả lần chạy.
-  Cần đăng nhập riêng thì dùng `authenticatedTest` (một lần mỗi worker).
+  Cần đăng nhập riêng thì dùng `createAuthFixture` của dự án (`src/core`) — một lần mỗi worker.
 - **Hardcode đường dẫn screenshot.** Dùng `screenshot(name)` của page/component — worker
   song song sẽ ghi đè nhau.
 - **Test phụ thuộc thứ tự chạy.** Mỗi test tự tạo dữ liệu nó cần, tên sinh duy nhất.
+- **Sinh script khi chưa chốt tên file JSON.** Không tự nhặt một file trong `testcase/`,
+  không lấy file đọc ở lượt trước, không dùng file ngoài repo — xem bước 0.
+- **Kết thúc một lượt sinh mà chưa ghi file summary.** Trạng thái nằm trong chat là trạng
+  thái mất khi đóng chat — xem bước 6.
+- **Tự đặt tên biến `.env` cho một trạng thái dữ liệu chưa ai khai.** Biến bịa thì không
+  ai cấp, case `skip` vĩnh viễn, và cái tên đó không truy được về đâu. Dùng đúng key mà
+  `docs/test-data.md` khai, hoặc đánh `DATA-TBD` — xem bước 2.
+- **Cho case dùng profile PHÁ HUỶ chạy song song.** Chúng dẫm lên trạng thái của nhau;
+  gói trong một `describe` chạy `serial`.
 
 ## Không thuộc skill này
 

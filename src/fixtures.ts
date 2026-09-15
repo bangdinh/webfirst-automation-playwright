@@ -13,7 +13,7 @@ import {
   pagesFixture,
 } from 'qc-kit/fixtures';
 import { config } from './env';
-import { createAuthFixture } from 'qc-kit/core';
+import { createAuthFixture } from './core';
 import { standardUser } from './data/authenticators';
 
 export const test = mergeTests(

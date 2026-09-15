@@ -38,6 +38,7 @@ riêng**.
 src/components/AddDeviceDialog.ts  →  export class AddDeviceDialog extends BaseComponent
 src/components/AddRoleDialog.ts    →  export class AddRoleDialog   extends BaseComponent
 src/components/SidePanel.ts        →  export class SidePanel       extends BaseComponent
+src/components/LogoutConfirmDialog.ts →  export class LogoutConfirmDialog extends BaseComponent
 ```
 
 `SidePanel` là panel điều hướng trái của khu vực `Quản lý`, dùng chung cho `ManagePage` và
@@ -69,6 +70,11 @@ tests/ui/manage/manage.spec.ts
 |---|---|---|
 | Đăng nhập (app) | `src/pages/login/LoginPage.ts` | `tests/ui/login/login.spec.ts` |
 | Đăng nhập (SSO Keycloak) | `src/pages/login/SsoLoginPage.ts` | `tests/ui/login/login.spec.ts` |
+| Quên mật khẩu ("Xác nhận tài khoản") | `src/pages/login/ForgotPasswordPage.ts` | `tests/ui/login/auth.spec.ts` |
+| Setup 2FA lần đầu (QR + 6 ô OTP) | `src/pages/login/TwoFactorSetupPage.ts` | `tests/ui/login/auth.spec.ts` |
+| Xác thực mã OTP (returning user) | `src/pages/login/OtpVerificationPage.ts` | `tests/ui/login/auth.spec.ts` |
+| Đổi / đặt lại mật khẩu | `src/pages/login/ChangePasswordPage.ts` | `tests/ui/login/auth.spec.ts` |
+| Đổi mật khẩu bắt buộc khi hết hạn | `src/pages/login/PasswordExpiredPage.ts` | `tests/ui/login/auth.spec.ts` |
 | Giám sát / Trực tiếp | `src/pages/live/LivePage.ts` | `tests/ui/live/live.spec.ts` |
 | Thanh điều hướng chính | `src/pages/header/Header.ts` | `tests/ui/header/header.spec.ts` |
 | Quản lý > Thiết bị | `src/pages/device/DeviceManagementPage.ts` | `tests/ui/device/*.spec.ts` |

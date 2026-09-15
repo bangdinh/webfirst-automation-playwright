@@ -84,6 +84,6 @@ Hai kiểu method trong client, đừng dùng lẫn:
 Spec API chạy dưới project `api`; bật nó trong `playwright.config.ts`
 (`projects: { api: true }`).
 
-Kit lo cơ chế (session, step vào report, artifact khi fail, base class). Repo này lo
-locator, URL và tài khoản của sản phẩm. Ranh giới đó là thứ giữ cho việc nâng cấp kit
-không phải sửa test.
+Kit lo cơ chế dùng chung (step vào report, artifact khi fail, base class). Repo này lo
+locator, URL, tài khoản và luồng đăng nhập (`src/core/`) của sản phẩm. Ranh giới đó là
+thứ giữ cho việc nâng cấp kit không phải sửa test.
