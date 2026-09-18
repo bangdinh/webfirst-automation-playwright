@@ -23,23 +23,17 @@ Nguồn đầy đủ: `docs/testcase-standard.md` trong repo kit.
 | `tags` | `smoke`, `regression`… |
 | `source` | `requirement` \| `context` \| `inferred` |
 
-## Tám verb — cố tình đóng
+## Một step gồm đúng ba field
 
-Một step phải **thực thi được**, không phải văn xuôi.
+`no`, `description`, `expected`. Hết.
 
-| Verb | Playwright |
-|---|---|
-| `tap` | `click` |
-| `input` | `fill` |
-| `verify` | `expect` |
-| `navigate` | `goto` |
-| `select` | `selectOption` |
-| `wait` | `waitFor` |
-| `swipe` | **không có tương đương** — phải tự cài cử chỉ |
-| `scroll` | **không có tương đương** |
+`description` là **văn xuôi** — câu người viết case gõ ra, giữ nguyên văn. Không có field
+cho hành động, cho màn hình, cho phần tử: file Excel không có ô nào cho chúng, và suy ra
+từ câu chữ là đoán. Xem `ADR-0003` của kit.
 
-Verb thứ chín không tồn tại. Cần một hành động khác thì diễn đạt bằng tám verb này, hoặc
-đề xuất mở rộng hợp đồng ở kit (cần ADR).
+Viết `description` sao cho **một người đọc xong làm lại được**: một hành động một dòng,
+nêu rõ bấm/nhập cái gì. Đó là thứ duy nhất bước sinh script có để đi tiếp, nên câu mơ hồ
+ở đây thành một câu hỏi phải quay lại hỏi người viết.
 
 ## `source` — field hay bị bỏ qua nhất, và quan trọng nhất
 
@@ -68,22 +62,16 @@ assertGrounded(suite);                   // chặn case inferred không khai ass
 ```
 
 `parseTestCaseResult` **dung thứ đóng gói** (markdown fence, lời dẫn quanh JSON) nhưng
-**nghiêm với schema** — thiếu field hay verb lạ thì từ chối, kèm đường dẫn chính xác kiểu
-`test_cases[0].steps[2].action`.
+**nghiêm với schema** — thiếu field thì từ chối, kèm đường dẫn chính xác kiểu
+`test_cases[0].steps[2].description`.
 
-## `target` sang `data-testid`
+## Step KHÔNG nói phần tử nào
 
-Agent trả snake_case (`start_live_button`); quy ước của kit là kebab-case có prefix module
-(`livestream-start-live-btn`).
+Một step chỉ có một câu `description`. Nó **không** có field cho
+phần tử bị thao tác — case viết tay không có ô đó, và suy ra từ câu chữ là đoán.
 
-```ts
-import { toTestId } from 'qc-kit/contract';
-toTestId('livestream_setup', 'start_live_button');  // 'livestream-start-live-btn'
-```
-
-Module lấy từ **đoạn đầu** của `screen` — đây là heuristic. Tên màn hình không phải tên
-module thì truyền tay: `toTestId(screen, target, { module: 'place-detail' })`. Đừng đặt ra
-quy tắc đặt tên mới.
+Phần tử thật xác định từ DOM app đang chạy, ở skill `gen-script`. Đầu vào cũ còn field
+`target` thì validator bỏ qua, không báo lỗi.
 
 ## Không hardcode text UI
 

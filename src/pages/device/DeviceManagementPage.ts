@@ -90,6 +90,19 @@ export class DeviceManagementPage extends BasePage {
     await expect(this.themThietBi).toBeEnabled();
   }
 
+  /** `TB1.3`/`DT2` — chọn "Thêm thủ công" trong menu vừa mở. */
+  async chonThemThuCong(): Promise<void> {
+    await this.step('chọn Thêm thủ công', async () => {
+      await this.clickWhenReady(this.themThuCong);
+    });
+  }
+
+  /** `TB1.4`/`DT3` — chọn "Tải lên tệp Microsoft Excel" trong menu vừa mở. */
+  async chonTaiLenExcel(): Promise<void> {
+    await this.step('chọn Tải lên tệp Microsoft Excel', async () => {
+      await this.clickWhenReady(this.taiLenExcel);
+    });
+  }
   /** Expected của DT1: menu hiện ra, gồm đúng hai lựa chọn. */
   async expectMenuPhuongThucThem(): Promise<void> {
     await expect(this.menuPhuongThucThem).toBeVisible();

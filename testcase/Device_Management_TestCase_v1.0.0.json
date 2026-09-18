@@ -1,8 +1,77 @@
 {
   "summary": {
-    "total": 1
+    "total": 6
   },
   "test_cases": [
+    {
+      "test_case_id": "TB1.0",
+      "title": "Kiểm tra click nút \"+ Thêm thiết bị\"",
+      "preconditions": [],
+      "steps": [
+        {
+          "no": 1,
+          "description": "Vào màn Quản lý > Thiết bị > tab Thiết bị",
+          "expected": ""
+        },
+        {
+          "no": 2,
+          "description": "Click nút \"+ Thêm thiết bị\" ở góc trên bên phải",
+          "expected": "Hiển thị menu \"Chọn phương thức thêm\" gồm 2 lựa chọn:\n- Thêm thủ công\n- Tải lên tệp Microsoft Excel"
+        }
+      ],
+      "test_data": {},
+      "priority": "High",
+      "tags": [
+        "@high"
+      ],
+      "source": "requirement"
+    },
+    {
+      "test_case_id": "TB1.3",
+      "title": "Kiểm tra click \"Thêm thủ công\"",
+      "preconditions": [],
+      "steps": [
+        {
+          "no": 1,
+          "description": "Mở menu \"Chọn phương thức thêm\"",
+          "expected": ""
+        },
+        {
+          "no": 2,
+          "description": "Click \"Thêm thủ công\"",
+          "expected": "Hiển thị dialog \"Thêm thiết bị\" với form nhập thủ công"
+        }
+      ],
+      "test_data": {},
+      "priority": "High",
+      "tags": [
+        "@high"
+      ],
+      "source": "requirement"
+    },
+    {
+      "test_case_id": "TB1.4",
+      "title": "Kiểm tra click \"Tải lên tệp Microsoft Excel\"",
+      "preconditions": [],
+      "steps": [
+        {
+          "no": 1,
+          "description": "Mở menu \"Chọn phương thức thêm\"",
+          "expected": ""
+        },
+        {
+          "no": 2,
+          "description": "Click \"Tải lên tệp Microsoft Excel\"",
+          "expected": "Hiển thị dialog \"Thêm thiết bị\" với khu vực tải tệp"
+        }
+      ],
+      "test_data": {},
+      "priority": "High",
+      "tags": [
+        "@high"
+      ],
+      "source": "requirement"
+    },
     {
       "test_case_id": "DT1",
       "title": "Kiểm tra click nút \"+ Thêm thiết bị\"",
@@ -12,31 +81,73 @@
       "steps": [
         {
           "no": 1,
-          "screen": "add_device_menu",
-          "action": "select",
-          "description": "Chọn tab Quản lý",
+          "description": "Chọn tab Quản lý >",
           "expected": ""
         },
         {
           "no": 2,
-          "screen": "add_device_menu",
-          "action": "select",
           "description": "chọn Thiết bị bên panel trái",
           "expected": ""
         },
         {
           "no": 3,
-          "screen": "add_device_menu",
-          "action": "select",
           "description": "Chọn tab Thiết bị",
           "expected": ""
         },
         {
           "no": 4,
-          "screen": "add_device_menu",
-          "action": "tap",
           "description": "Click nút \"+ Thêm thiết bị\" ở góc trên bên phải",
           "expected": "Hiển thị menu \"Chọn phương thức thêm\" gồm 2 lựa chọn:\n- Thêm thủ công\n- Tải lên tệp Microsoft Excel"
+        }
+      ],
+      "test_data": {},
+      "priority": "High",
+      "tags": [
+        "@high"
+      ],
+      "source": "requirement"
+    },
+    {
+      "test_case_id": "DT2",
+      "title": "Kiểm tra click \"Thêm thủ công\"",
+      "preconditions": [
+        "Đã login vào hệ thống"
+      ],
+      "steps": [
+        {
+          "no": 1,
+          "description": "Mở menu \"Chọn phương thức thêm\"",
+          "expected": ""
+        },
+        {
+          "no": 2,
+          "description": "Click \"Thêm thủ công\"",
+          "expected": "Hiển thị dialog \"Thêm thiết bị\" với form nhập thủ công"
+        }
+      ],
+      "test_data": {},
+      "priority": "High",
+      "tags": [
+        "@high"
+      ],
+      "source": "requirement"
+    },
+    {
+      "test_case_id": "DT3",
+      "title": "Kiểm tra click \"Tải lên tệp Microsoft Excel\"",
+      "preconditions": [
+        "Đã login vào hệ thống"
+      ],
+      "steps": [
+        {
+          "no": 1,
+          "description": "Mở menu \"Chọn phương thức thêm\"",
+          "expected": ""
+        },
+        {
+          "no": 2,
+          "description": "Click \"Tải lên tệp Microsoft Excel\"",
+          "expected": "Hiển thị dialog \"Thêm thiết bị\" với khu vực tải tệp"
         }
       ],
       "test_data": {},

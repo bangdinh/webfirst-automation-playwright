@@ -5,7 +5,7 @@
  * tất cả dùng lại — nên không spec nào phải đăng nhập, dù chạy song song bao nhiêu.
  * Session của lần chạy trước được dùng lại tới khi quá SESSION_TTL_MINUTES.
  */
-import { createAuthSetup } from 'qc-kit/core';
+import { createAuthSetup } from '../../src/core';
 import { standardUser } from '../../src/data/authenticators';
 
 createAuthSetup(standardUser, { title: 'đăng nhập tài khoản chuẩn' });

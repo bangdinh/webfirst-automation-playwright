@@ -6,9 +6,9 @@ Hướng dẫn cho Claude Code trong repo này. **Giữ file này gọn** — n�
 
 `web-automation` — bộ test automation dựng trên [qc-kit](https://github.com/bangdinh/qc-kit).
 
-Kit lo **cơ chế**: cấu hình, session, step vào report, base class, hợp đồng test case.
-Repo này lo **sản phẩm**: locator, URL, tài khoản, và các case của nó. Ranh giới đó là thứ
-giữ cho việc nâng cấp kit không phải sửa test.
+Kit lo **cơ chế dùng chung**: cấu hình, step vào report, base class, hợp đồng test case.
+Repo này lo **sản phẩm**: locator, URL, tài khoản, luồng đăng nhập (`src/core/`) và các
+case của nó. Ranh giới đó là thứ giữ cho việc nâng cấp kit không phải sửa test.
 
 ## Luật — vi phạm nghĩa là code đang nằm sai repo
 
@@ -20,6 +20,9 @@ giữ cho việc nâng cấp kit không phải sửa test.
 3. **Locator lấy từ DOM thật**, không bịa `data-testid` rồi hy vọng nó tồn tại.
 4. **Không đăng nhập trong `beforeEach`.** Session do project `setup` lo, một lần cho cả
    lần chạy.
+5. **Đăng nhập là code của repo này, không phải của kit.** `src/core/` giữ `createAuthSetup`,
+   `createAuthFixture`, cache session và đường dẫn `playwright/.auth` — sửa ở đây, đừng đề
+   xuất đưa ngược lên kit (ADR 0004 của kit).
 
 ## Verify
 
@@ -47,10 +50,16 @@ mục không còn trong CHANGELOG. Đã dính một lần với `qc-flow` + `tes
 
 ```
 src/env.ts        bảng môi trường — file duy nhất biết một URL
+src/core/         đăng nhập của DỰ ÁN: auth (khi nào) · session (cache cookie) · paths (.auth)
 src/fixtures.ts   cửa vào duy nhất của spec; compose fixture của kit
 src/pages/        một màn hình một class, kế thừa BasePage của kit
 tests/ui/         spec UI
 ```
+
+Luật đầy đủ — chia khu vực, quy ước tên, bảng ánh xạ màn hình → thư mục — nằm ở
+[`docs/test-structure.md`](docs/test-structure.md). **Đó là nguồn duy nhất**; skill
+`gen-script` đọc thẳng file đó trước khi sinh code. Đừng mô tả lại cấu trúc ở đây, hai bản
+sẽ lệch nhau.
 
 ## Skills
 
