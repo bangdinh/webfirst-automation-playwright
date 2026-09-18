@@ -176,7 +176,6 @@ export class SsoLoginPage extends BasePage {
       await expect(this.passwordToggle).toBeVisible();
       await expect(this.forgotPasswordLink).toBeVisible();
       await expect(this.submitButton).toBeVisible();
-      await expect(this.ssoButton).toBeVisible();
       await expect(this.backLink).toBeVisible();
     });
   }

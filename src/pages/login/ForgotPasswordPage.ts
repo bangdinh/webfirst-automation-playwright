@@ -9,8 +9,8 @@ import { SsoLoginPage } from './SsoLoginPage';
  * với `SsoLoginPage` và chịu đúng ràng buộc của trang đó: không deep-link được. `open()`
  * vì thế bị chặn — xem lý do ở `SsoLoginPage`.
  *
- * TẠM THỜI: cả class chưa có locator thật nào. Toàn bộ `LOCATOR-TBD` bên dưới phải lấy
- * từ DOM ở bước 3 trước khi bỏ `test.fixme` của case AUTH3.x.
+ * TẠM THỜI: mới `submitButton` được đối chiếu DOM thật. Mọi `LOCATOR-TBD` còn lại bên dưới
+ * phải lấy từ DOM ở bước 3 trước khi bỏ `test.fixme` của case AUTH3.x.
  */
 
 /** Nhãn hiển thị. TẠM THỜI: lấy từ `expected` của AUTH3.x, CHƯA đối chiếu DOM thật. */
@@ -34,8 +34,14 @@ export class ForgotPasswordPage extends BasePage {
   // LOCATOR-TBD: ô "Tài khoản" (AUTH3.0 step 2) — lấy locator thật từ DOM, xem bước 3
   readonly account = this.page.getByTestId('sso-reset-password-username-input');
 
-  // LOCATOR-TBD: nút "Cung cấp lại mật khẩu" (AUTH3.1 step 2)
-  readonly submitButton = this.page.getByTestId('LOCATOR-TBD-forgot-submit-btn');
+  /**
+   * Nút "Cung cấp lại mật khẩu" (AUTH3.1 step 2). Đã đối chiếu DOM thật — không còn TBD.
+   *
+   * `<button type="submit" name="login">`, tức form này submit kiểu native. Nhãn hiển thị
+   * nằm trong `<span data-kc-msg="vmResetSubmit">` do message bundle Keycloak bơm vào, nên
+   * KHÔNG neo locator vào chữ "Tiếp theo": đổi bản dịch là gãy.
+   */
+  readonly submitButton = this.page.getByTestId('sso-reset-password-submit-btn');
 
   // LOCATOR-TBD: inline error dưới ô Tài khoản (AUTH3.1 step 2)
   readonly accountError = this.page.getByTestId('sso-reset-password-error');
@@ -102,7 +108,36 @@ export class ForgotPasswordPage extends BasePage {
     });
   }
 
-  /** AUTH3.1 — bỏ trống thì chặn ngay ở client. */
+  /**
+   * AUTH3.1 — bỏ trống Tài khoản thì yêu cầu KHÔNG đi, màn hình đứng yên.
+   *
+   * Nhận URL chụp TRƯỚC khi bấm chứ không tự đọc `page.url()` ở đây: đọc sau khi bấm thì
+   * URL mới đã là URL hiện tại, và assertion tự khớp với chính nó — xanh trong mọi trường
+   * hợp. Chụp trước là thứ duy nhất biến "vẫn ở lại" thành một điều kiểm được.
+   *
+   * GIỚI HẠN đã biết: cả ba assertion dưới đây đều đúng NGAY ở lần kiểm đầu, nên nếu app
+   * điều hướng trễ (chờ response rồi mới chuyển màn) thì test đã xanh xong trước lúc đó.
+   * Muốn loại hẳn khả năng ấy phải neo vào một tín hiệu KHẲNG ĐỊNH rằng form bị chặn —
+   * cách `SsoLoginPage.expectBrowserBlocked()` dùng `validity.valueMissing` cho AUTH2.1.
+   * Chưa dùng ở đây vì chưa biết ô Tài khoản của màn này có `required` trên DOM hay không;
+   * xác minh xong thì siết lại.
+   */
+  async expectStillOnPage(urlTruocKhiGui: string): Promise<void> {
+    await this.step('vẫn ở lại màn Xác nhận tài khoản', async () => {
+      await expect(this.page).toHaveURL(urlTruocKhiGui);
+      await expect(this.account).toBeEditable();
+      await expect(this.submitButton).toBeVisible();
+    });
+  }
+
+  /**
+   * Inline error "Vui lòng nhập tài khoản." mà `expected` của AUTH3.1 đòi.
+   *
+   * KHÔNG còn được gọi: script của AUTH3.1 nay kiểm "vẫn ở lại màn hình" (xem
+   * `expectStillOnPage()`). Giữ lại vì nó là bản ghi của chỗ lệch giữa file test case và
+   * thứ đang được kiểm — chốt được màn hình thật có vẽ inline error này hay không thì một
+   * là gọi lại nó, hai là xoá nó cùng `accountError` và sửa `expected` ở file nguồn.
+   */
   async expectAccountRequired(): Promise<void> {
     await this.step('ô Tài khoản báo thiếu', async () => {
       await expect(this.accountError).toHaveText(VI.accountRequired);

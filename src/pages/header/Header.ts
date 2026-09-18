@@ -25,12 +25,12 @@ export class Header extends BaseComponent {
   readonly quanLy = this.root.getByRole('link', { name: 'Quản lý', exact: true });
 
   // LOCATOR-TBD: tên tài khoản / avatar ở góc trên bên phải (AUTH6.0 step 1)
-  readonly taiKhoan = this.root.getByTestId('LOCATOR-TBD-header-account');
+  readonly taiKhoan = this.root.locator('//span[@aria-label="taipm7@fpt.com"]');
 
   // LOCATOR-TBD: dòng "Đăng xuất" trong menu tài khoản (AUTH6.0 step 2).
   // Menu mở ra có thể nằm NGOÀI `root` (portal), nên locator này neo vào `page` chứ không
   // vào `root` — bước 3 xác minh lại.
-  readonly dangXuat = this.page.getByTestId('LOCATOR-TBD-header-logout');
+  readonly dangXuat = this.page.getByTestId('shell-logout-link');
 
   /** Sang tab Quản lý. App điều hướng tới `/vi/devices`. */
   async moQuanLy(): Promise<void> {
