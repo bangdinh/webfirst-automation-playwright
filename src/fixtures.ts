@@ -13,12 +13,14 @@ import {
   pagesFixture,
 } from 'qc-kit/fixtures';
 import { config } from './env';
-import { createAuthFixture } from './core';
+import { createAuthFixture, docSessionToken } from './core';
 import { standardUser } from './data/authenticators';
 
 export const test = mergeTests(
   pagesFixture,
-  createApiFixture({ apiURL: config.apiURL }),
+  // Token của tầng API lấy từ phiên mà project `setup` đã đăng nhập bằng UI — không xin
+  // lại từ Keycloak. Hàm chạy MỖI TEST, nên nó luôn đọc token mới nhất trên đĩa.
+  createApiFixture({ apiURL: config.apiURL, token: docSessionToken }),
   createDataFixture({
     // Dữ liệu test của dự án: tài khoản, factory, hằng số nghiệp vụ.
     ten: 'giá trị mẫu',

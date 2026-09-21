@@ -17,7 +17,11 @@ import { SsoLoginPage } from './SsoLoginPage';
 const VI = {
   accountPlaceholder: 'Nhập email hoặc số điện thoại',
   accountRequired: 'Vui lòng nhập tài khoản.',
-  requestSucceeded: 'Gửi yêu cầu thành công',
+  /**
+   * ĐÃ đối chiếu DOM (snapshot AUTH3.3, 2026-09-18). File test case ghi 'Gửi yêu cầu
+   * thành công' — sản phẩm nói khác hẳn, và theo luật của repo thì DOM thắng.
+   */
+  requestSucceeded: 'Bạn sẽ sớm nhận được email kèm hướng dẫn khôi phục mật khẩu.',
   requestFailed: 'Gửi yêu cầu thất bại. Vui lòng thử lại sau.',
 } as const;
 
@@ -53,13 +57,44 @@ export class ForgotPasswordPage extends BasePage {
    * khác nhau ở nội dung và icon. Khai hai locator cho một phần tử thì hôm Dev đổi UI sẽ
    * sửa một cái và quên cái kia.
    */
-  readonly toast = this.page.getByTestId('LOCATOR-TBD-forgot-toast');
+  /**
+   * Dải thông báo kết quả gửi yêu cầu — `role=status`, tầng ① của thang locator.
+   *
+   * Lấy từ DOM thật (snapshot AUTH3.3):
+   *
+   *   - status:
+   *     - paragraph: Bạn sẽ sớm nhận được email kèm hướng dẫn khôi phục mật khẩu.
+   *     - button "Đóng thông báo"
+   *
+   * Khác `SsoLoginPage.alertBanner` (`role=alert`): `status` là thông báo không khẩn,
+   * `alert` là lỗi cần chú ý ngay. Hai vai trò khác nhau nên không đụng nhau.
+   *
+   * LƯU Ý VỀ VỊ TRÍ: sau khi bấm gửi, app quay VỀ MÀN ĐĂNG NHẬP và hiện dải này ở đó,
+   * chứ không ở lại màn Xác nhận tài khoản. Locator neo vào `page` nên vẫn đúng.
+   */
+  readonly toast = this.page.getByRole('status');
 
-  // LOCATOR-TBD: nút "Gửi lại mã", có trạng thái đếm ngược 12s sau khi gửi (AUTH3.3)
-  readonly resendButton = this.page.getByTestId('LOCATOR-TBD-forgot-resend-btn');
+  /**
+   * LOCATOR-TBD: nút "Gửi lại mã" với đếm ngược 12s mà AUTH3.3 và AUTH3.6 mô tả.
+   *
+   * **Chưa quan sát thấy nó tồn tại.** Snapshot sau khi gửi thành công cho thấy app quay
+   * về màn đăng nhập với một dải `role=status`, không có nút gửi lại nào. Hoặc sản phẩm
+   * không có tính năng này, hoặc nó nằm ở một màn khác chưa ai tới. Câu hỏi cho BA.
+   */
+  readonly resendButton = this.page.getByTestId('LOCATOR-TBD-sso-reset-password-resend-btn');
 
-  // LOCATOR-TBD: link "Quay lại" về màn đăng nhập (AUTH3.5 step 1)
-  readonly backLink = this.page.getByTestId('sso-reset-password-submit-btn');
+  /**
+   * TESTID-ĐỀ-NGHỊ: link "Quay lại" về màn đăng nhập (AUTH3.5 step 1).
+   *
+   * Trước đây field này trỏ nhầm vào `sso-reset-password-submit-btn` — TRÙNG `submitButton`.
+   * Lượt chạy thật bắt được: AUTH3.5 bấm "Quay lại" và landed ở
+   * `/login-actions/reset-credentials`, tức nó đã GỬI một yêu cầu cấp lại mật khẩu thật
+   * rồi mới đỏ. Một locator sai không chỉ làm test đỏ, nó còn làm thay đổi hệ thống.
+   *
+   * Tên đề nghị suy theo công thức (link → `-link`) và có chỗ dựa chắc: màn anh em
+   * `SsoLoginPage` đã được Dev gắn đúng `sso-login-back-link` cho cùng phần tử này.
+   */
+  readonly backLink = this.page.getByTestId('sso-reset-password-back-link');
 
   override async open(): Promise<never> {
     throw new Error(
@@ -152,9 +187,10 @@ export class ForgotPasswordPage extends BasePage {
    * toast và trạng thái đếm ngược của nút gửi lại.
    */
   async expectRequestSucceeded(): Promise<void> {
-    await this.step('toast báo gửi yêu cầu thành công, nút gửi lại vào đếm ngược', async () => {
+    await this.step('báo đã gửi email khôi phục', async () => {
       await expect(this.toast).toContainText(VI.requestSucceeded);
-      await expect(this.resendButton).toBeDisabled();
+      // Vế "nút Gửi lại mã vào đếm ngược 12s" KHÔNG assert: lượt chạy thật cho thấy app quay
+      // về màn đăng nhập và không có nút gửi lại nào. Xem JSDoc của `resendButton`.
     });
   }
 

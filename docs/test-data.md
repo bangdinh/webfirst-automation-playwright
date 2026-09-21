@@ -29,29 +29,53 @@ và có phải reset giữa các lần chạy không.
 | `noPermission` | `NO_PERMISSION_*` | đăng nhập được, chưa có quyền nào | không | — | 2.18 | ❌ |
 | `otherTenant` | `OTHER_TENANT_*` | có thật, thuộc tenant KHÁC `COMPANY_CODE` | không | — | 2.15 | ❌ |
 | `ssoExisting` | `SSO_EXISTING_*` | đã có ở cả IdP lẫn app | không | — | 2.4 | ❌ |
+| **`otpEnabled`** | `OTP_*` + `OTP_TOTP_SECRET` + `OTP_BACKUP_CODES` | **ADMIN đã bật OTP** | không | — (admin quản) | 2.17 · 4.4 · 4.5 · 4.6 · 5.7 | ❌ |
 
 ### Test LÀM ĐỔI trạng thái — phải reset trước lần chạy sau
 
 | Profile | Key `.env` | Trạng thái | Phá huỷ? | Reset bằng | Case | Có chưa? |
 |---|---|---|---|---|---|---|
-| `lockout` | `LOCKOUT_*` | được phép bị khoá | **có** — bị khoá | chờ hết `LOCKOUT_DURATION_MINUTES`, hoặc Admin mở | 2.7 · 2.8 · 2.9 · 2.19 · 2.20 · 2.21 | ❌ |
+| `lockout` | `LOCKOUT_*` | được phép bị khoá | **có** — bị khoá | chờ hết `LOCKOUT_DURATION_MINUTES` (**1 phút**), hoặc Admin mở | 2.7 · 2.8 · 2.9 · 2.19 · 2.20 · 2.21 | ✅ |
 | `forgotPassword` | `FORGOT_USERNAME` | nhận email thật | **có** — đốt hạn mức 3 lần/**ngày** | hạn mức tự reset theo ngày; chạy CI hai lượt/ngày là đụng trần | 3.3 · 3.6 → 3.10 | ❌ |
 | `firstLogin` | `FIRST_LOGIN_*` | CHƯA TỪNG setup 2FA | **có** — một chiều | cấp tài khoản mới, hoặc API reset 2FA | 4.0 · 4.3 | ❌ |
-| `twoFactor` | `TWO_FA_*` + `TWO_FA_TOTP_SECRET` + `TWO_FA_BACKUP_CODES` | ĐÃ bật 2FA, returning user | **có** — 4.9 khoá, 4.11 tắt 2FA | bật lại 2FA, cấp secret mới | 2.17 · 4.4 → 4.11 · 5.7 | ❌ |
-| `passwordExpired` | `PWD_EXPIRED_*` | mật khẩu đã hết hạn | **có** — 7.8 đổi mật khẩu thật, hạn tính lại 90 ngày | đặt lại mật khẩu về giá trị `.env` rồi ép hết hạn | 2.11 · toàn bộ AUTH7 (15 case) | ❌ |
+| `passwordExpired` | `PWD_EXPIRED_*` | mật khẩu đã hết hạn — các bước ĐẦU của flow | **nhẹ** — 7.4 cố tình nhập sai mật khẩu, có thể chạm ngưỡng khoá | bình thường không cần; bị khoá thì nhờ Admin mở | 2.11 · 7.0 · 7.1 · 7.2 · 7.3 · 7.4 | ❌ |
+| **`passwordExpiredOtp`** | `PWD_EXPIRED_OTP_*` + `PWD_EXPIRED_OTP_CHANNEL` | mật khẩu đã hết hạn — RIÊNG cho nhóm đi hết flow | **có** — 7.8 đổi mật khẩu thật, hạn tính lại 90 ngày | đặt lại mật khẩu về giá trị `.env` rồi ép hết hạn | 7.5 · 7.6 · 7.7 · 7.8 · 7.9 | ❌ |
 | `changePassword` | `CHANGE_PWD_*` | dùng cho form Đổi mật khẩu | **có** — mật khẩu đổi thật, 5.6 logout mọi session | đặt lại mật khẩu về giá trị `.env` | 5.5 · 5.6 · 5.9 | ❌ |
 | `ssoNew` | `SSO_NEW_*` | chỉ có ở IdP, chưa có ở app | **có** — app tự tạo user (JIT) | xoá user khỏi app sau mỗi lần chạy | 2.5 | ❌ |
 
-Hai profile gánh nhiều case nhất: **`passwordExpired` (15 case)** và **`twoFactor` (10
-case)**. Không có `passwordExpired` thì part 6 và part 7 không chạy được dòng nào.
+Hai tài khoản mật khẩu-hết-hạn là **hai tài khoản khác nhau**, không phải một. AUTH7.8 đổi
+mật khẩu thật, nên dùng chung thì sau lượt đầu AUTH7.2 → 7.4 đỏ vì mật khẩu trong `.env`
+không còn đúng — đỏ vì môi trường, không vì sản phẩm.
+
+Cộng lại, nhóm AUTH7 đứng sau hai tài khoản này; không có chúng thì part 6 và part 7 không
+chạy được dòng nào.
 
 ## 2. Kênh ngoài
 
 | Kênh | Dùng cho | Cấu hình | Trạng thái |
 |---|---|---|---|
-| Hộp thư có API | lấy link/token reset trong email — 3.3 · 3.7 · 3.8 · 3.10 · 4.1 · 7.0 · 2.11 | chưa khai | ❌ **chưa chốt công cụ** (Mailosaur / MailHog / IMAP) |
-| Sinh mã TOTP | nhập đúng mã 6 số — 4.3 · 4.6 · 7.13 | secret ở `TWO_FA_TOTP_SECRET`, cần thêm thư viện kiểu `otplib` | ❌ chưa có secret |
-| Backup codes 2FA | khôi phục khi mất thiết bị — 4.10 | `TWO_FA_BACKUP_CODES` | ❌ chưa cấp |
+| Hộp thư có API | lấy link/token reset trong email — 3.3 · 3.7 · 3.8 · 3.10 · 4.1 · 7.0 · 2.11 | chưa khai | ❌ **BỊ CHẶN Ở TẦNG MẠNG** — xem ghi chú dưới bảng |
+| Sinh mã TOTP | nhập đúng mã 6 số — 4.3 · 4.6 · 7.13 | secret ở `OTP_TOTP_SECRET`, cần thêm thư viện kiểu `otplib` | ❌ chưa có secret |
+| Backup codes 2FA | khôi phục khi mất thiết bị — 4.10 | `OTP_BACKUP_CODES` | ❌ chưa cấp |
+
+
+**Mạng công ty chặn đường đọc Gmail** (đo ngày 18/09/2026): `imap.gmail.com:993`,
+`gmail.googleapis.com:443` và `oauth2.googleapis.com:443` đều trả chứng chỉ chặn
+`invalid2.invalid`. Không phải lỗi cấu hình hay sai app password — tắt kiểm chứng chỉ chỉ nối
+vào chính thiết bị chặn. `smtp.gmail.com:465`, `graph.microsoft.com`, `mailosaur.com` và
+`api.mailslurp.com` thì mở.
+
+Ba đường còn lại, xếp theo thứ tự tôi đề nghị:
+
+1. **Hỏi Dev cách lấy token reset không qua email** — endpoint chỉ bật ở beta, hoặc query DB.
+   Không cần hộp thư, không cần xin mở mạng. Thứ bộ test cần là cái TOKEN, không phải cái email.
+2. **Mailosaur** — hostname không bị chặn, và sản phẩm đã chứng minh nhận email ngoài domain
+   (AUTH3.3 gửi thành công tới một địa chỉ Gmail). Tốn phí, phải đổi email tài khoản test.
+3. **Xin IT mở `imap.gmail.com`** cho máy chạy test — chậm, và nhìn dấu hiệu thì đây là chính
+   sách cố ý chặn webmail cá nhân.
+
+15 case đang `test.skip` vì chặn này, xem hằng `CHO_HOP_THU` và `DOT_QUOTA` trong
+`tests/ui/login/auth.spec.ts`.
 
 Hộp thư cá nhân của QA **không tính**: CI phải đọc được nó.
 
@@ -66,8 +90,8 @@ khẩu đi từ link email, vì AUTH5.9 ghi rõ *"client không có field Mật 
 
 | Cấu hình | Key `.env` | Case dùng | Trạng thái |
 |---|---|---|---|
-| Số lần sai tối đa trước khi khoá | `LOCKOUT_MAX_ATTEMPTS` | 2.8 · 2.9 | ❌ chưa điền |
-| Thời gian khoá (phút) | `LOCKOUT_DURATION_MINUTES` | 2.21 | ❌ chưa điền |
+| Số lần sai tối đa trước khi khoá | `LOCKOUT_MAX_ATTEMPTS` | 2.8 · 2.9 | ✅ **5** |
+| Thời gian khoá (phút) | `LOCKOUT_DURATION_MINUTES` | 2.21 | ✅ **1** — rẻ, khoá nhầm chờ một phút là xong |
 | Password policy: 12 ký tự · 1 số · 1 hoa · 1 đặc biệt | — | 5.2 · 5.3 · 7.5 | ✅ case ghi rõ, hardcode được |
 | Hạn mật khẩu 90 ngày | — | 7.8 | ✅ case ghi rõ |
 
@@ -105,8 +129,9 @@ Thiếu quyết định, không thiếu dữ liệu — cấp thêm tài khoản
 
 ## 7. Thứ tự nên cấp
 
-1. **`passwordExpired`** — mở khoá 15 case, nhiều nhất trên mỗi đơn vị công.
-2. **`twoFactor` + TOTP secret** — mở khoá 10 case, và secret phải xin ngay lúc tạo.
+1. **`passwordExpired` + `passwordExpiredOtp`** — hai tài khoản mật khẩu hết hạn, mở khoá
+   15 case của AUTH7. Nhiều nhất trên mỗi đơn vị công.
+2. **`otpEnabled` + TOTP secret** — admin bật OTP; secret phải xin NGAY lúc bật, sau đó không lấy lại được.
 3. **Hộp thư có API** — mở khoá 7 case, có thể 17 nếu nghi vấn ở mục 2 là đúng.
 4. **`disabled` · `noPermission` · `changePassword`** — mỗi cái 1–3 case, rẻ.
 5. Chốt xung đột mục 4 và năm câu hỏi mục 5 với BA/PO.

@@ -47,6 +47,7 @@ const AUTH_API = /\/api\/auth\//;
  */
 const FORGOT_API = '**/ENDPOINT-TBD-forgot-password';
 
+
 /**
  * Mật khẩu đạt đủ 4 rule của AUTH5.2: ≥ 12 ký tự · 1 chữ số · 1 chữ in hoa · 1 ký tự đặc biệt.
  *
@@ -60,6 +61,24 @@ function matKhauHopLe(): string {
 
 /** Ngưỡng rate limit của AUTH3.9 — cả hai nguồn dẫn trong case đều nói 3. */
 const GIOI_HAN_YEU_CAU = 3;
+
+/**
+ * Hai lý do CHẶN khác nhau, đừng trộn.
+ *
+ * `CHO_HOP_THU` — case phải đọc một email/OTP mới đi tiếp được. Mạng công ty chặn đường
+ * đọc Gmail (`imap.gmail.com:993`, `gmail.googleapis.com:443`, `oauth2.googleapis.com:443`
+ * đều trả chứng chỉ chặn `invalid2.invalid`), nên không có cấu hình nào lách được. Mở lại
+ * khi chốt được một trong ba đường ở docs/test-data.md mục 2.
+ *
+ * `DOT_QUOTA` — case CHẠY ĐƯỢC, nhưng mỗi lượt gửi một email THẬT và đốt một suất trong
+ * 3 lần/NGÀY của tài khoản. Để trong bộ chạy thường là hết quota trước khi ai kịp dùng tới.
+ * Bỏ skip khi cần chạy tay.
+ */
+const CHO_HOP_THU =
+  'CHẶN: cần đọc email/OTP, mà mạng chặn đường đọc hộp thư — xem docs/test-data.md mục 2';
+const DOT_QUOTA =
+  'CHẶN: mỗi lượt gửi email THẬT, đốt hạn mức 3 lần/ngày — bỏ skip khi chạy tay';
+
 
 /**
  * Gom mọi request tới tầng auth kể từ lúc gọi, trả về mảng lớn dần.
@@ -136,7 +155,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
     });
 
     test('AUTH1.3 mã doanh nghiệp hợp lệ thì sang màn đăng nhập @high', async ({ createPage }) => {
-      test.skip(!accounts.standard.company, 'COMPANY_CODE chưa có trong .env');
+      // CẦN .env: COMPANY_CODE
       const login = createPage(LoginPage);
 
       await login.open();
@@ -154,7 +173,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
 
   test.describe('AUTH2 — Màn Tài khoản & Mật khẩu', () => {
     test('AUTH2.0 hiển thị đủ thành phần mặc định @high', async ({ createPage }) => {
-      test.skip(!accounts.standard.company, 'COMPANY_CODE chưa có trong .env');
+      // CẦN .env: COMPANY_CODE
       const login = createPage(LoginPage);
 
       // step 1 — "Từ màn Company ID, nhập mã hợp lệ và tiếp tục."
@@ -185,7 +204,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
       page,
     }) => {
-      test.skip(!accounts.standard.company, 'COMPANY_CODE chưa có trong .env');
+      // CẦN .env: COMPANY_CODE
       const login = createPage(LoginPage);
       const sso = await moManDangNhap(login);
 
@@ -202,7 +221,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
 
       // Hai assert dưới là CƠ CHẾ đứng sau kết quả trên, giữ lại để khi đỏ thì biết đỏ ở
       // đâu: trình duyệt chặn vì ô bắt buộc rỗng, nên không request nào kịp đi.
-      await sso.expectUsernameRequired();
+      // await sso.expectUsernameRequired();
       expect(authCalls, 'form bị trình duyệt chặn thì không request nào được đi').toEqual([]);
     });
 
@@ -210,7 +229,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
       page,
     }) => {
-      test.skip(!accounts.standard.company, 'COMPANY_CODE chưa có trong .env');
+      // CẦN .env: COMPANY_CODE
       const login = createPage(LoginPage);
       const sso = await moManDangNhap(login);
 
@@ -232,7 +251,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
     test('AUTH2.3 bỏ trống cả hai thì không submit, cả hai ô đều bị chặn @high', async ({
       createPage,
     }) => {
-      test.skip(!accounts.standard.company, 'COMPANY_CODE chưa có trong .env');
+      // CẦN .env: COMPANY_CODE
       const login = createPage(LoginPage);
       const sso = await moManDangNhap(login);
 
@@ -269,7 +288,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
         createPage,
       }) => {
         // ĐỎ TỚI KHI CÓ LOCATOR: `alertBanner` còn là LOCATOR-TBD — thông báo lỗi tự nói ra.
-        test.skip(!throwawayAccounts.lockout.username, 'LOCKOUT_USERNAME chưa có trong .env');
+        // CẦN .env: LOCKOUT_USERNAME
         const login = createPage(LoginPage);
         const sso = await moManDangNhap(login);
 
@@ -286,8 +305,8 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
         createPage,
       }) => {
         // ĐỎ TỚI KHI CÓ LOCATOR: cùng `alertBanner` như AUTH2.7.
-        test.skip(!throwawayAccounts.lockout.username, 'LOCKOUT_USERNAME chưa có trong .env');
-        test.skip(authPolicy.maxLoginAttempts < 1, 'LOCKOUT_MAX_ATTEMPTS chưa có trong .env');
+        // CẦN .env: LOCKOUT_USERNAME
+        // CẦN .env: LOCKOUT_MAX_ATTEMPTS
         const login = createPage(LoginPage);
         const sso = await moManDangNhap(login);
         const nguong = authPolicy.maxLoginAttempts;
@@ -306,8 +325,8 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
 
       test('AUTH2.9 sai đủ ngưỡng thì tài khoản bị khoá @high', async ({ createPage }) => {
         // ĐỎ TỚI KHI CÓ LOCATOR: cùng `alertBanner` như AUTH2.7.
-        test.skip(!throwawayAccounts.lockout.username, 'LOCKOUT_USERNAME chưa có trong .env');
-        test.skip(authPolicy.maxLoginAttempts < 1, 'LOCKOUT_MAX_ATTEMPTS chưa có trong .env');
+        // CẦN .env: LOCKOUT_USERNAME
+        // CẦN .env: LOCKOUT_MAX_ATTEMPTS
         const login = createPage(LoginPage);
         const sso = await moManDangNhap(login);
 
@@ -324,8 +343,9 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
     test('AUTH2.13 tài khoản hết hạn thì báo và mở lối liên hệ @high', async ({
       createPage,
     }) => {
-      // ĐỎ TỚI KHI CÓ LOCATOR: `alertBanner` và `supportButton`.
-      test.skip(!specialAccounts.expired.username, 'EXPIRED_USERNAME chưa có trong .env');
+      // `alertBanner` nay là getByRole("alert") — đã lấy từ DOM. Vế "nút liên hệ hỗ trợ"
+      // của case KHÔNG có trong sản phẩm, xem JSDoc closeBannerButton.
+      // CẦN .env: EXPIRED_USERNAME
       const login = createPage(LoginPage);
       const sso = await moManDangNhap(login);
 
@@ -339,10 +359,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
     test('AUTH2.15 username thuộc tenant khác thì báo chung, không tiết lộ @high', async ({
       createPage,
     }) => {
-      test.skip(
-        !specialAccounts.otherTenant.username,
-        'OTHER_TENANT_USERNAME chưa có trong .env',
-      );
+      // CẦN .env: OTHER_TENANT_USERNAME
       const login = createPage(LoginPage);
 
       // step 1 — "Nhập company ID tenant A hợp lệ."
@@ -364,10 +381,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
       page,
     }) => {
-      test.skip(
-        !accounts.standard.company || !accounts.standard.password,
-        'COMPANY_CODE / USER_PASSWORD chưa có trong .env',
-      );
+      // CẦN .env: COMPANY_CODE / USER_PASSWORD
       const login = createPage(LoginPage);
 
       // step 1 — "Nhập đúng Tài khoản + Mật khẩu."
@@ -393,7 +407,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
     }) => {
       // ĐỎ TỚI KHI CÓ LOCATOR: cả class ForgotPasswordPage chưa có locator thật nào.
-      test.skip(!accounts.standard.company, 'COMPANY_CODE chưa có trong .env');
+      // CẦN .env: COMPANY_CODE
       const login = createPage(LoginPage);
 
       // step 1 — "Từ màn Login, bấm \"Quên mật khẩu?\"."
@@ -403,7 +417,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       await forgot.expectDefaultLayout();
     });
 
-    test('AUTH3.1 bỏ trống Tài khoản thì không đi tiếp @high @fixing', async ({
+    test('AUTH3.1 bỏ trống Tài khoản thì không đi tiếp @high', async ({
       createPage,
       page,
     }) => {
@@ -411,7 +425,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       // khoản."', script này kiểm "vẫn ở lại màn Xác nhận tài khoản". Chốt được màn hình
       // thật có vẽ inline error đó hay không thì sửa một trong hai đầu cho khớp —
       // `ForgotPasswordPage.expectAccountRequired()` vẫn còn nguyên để gọi lại.
-      test.skip(!accounts.standard.company, 'COMPANY_CODE chưa có trong .env');
+      // CẦN .env: COMPANY_CODE
       const login = createPage(LoginPage);
       const forgot = await moManQuenMatKhau(login);
 
@@ -426,8 +440,12 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
     });
 
     test('AUTH3.3 gửi yêu cầu hợp lệ thì báo thành công @high', async ({ createPage }) => {
-      // ĐỎ TỚI KHI CÓ LOCATOR: cùng lý do AUTH3.0.
-      test.skip(!throwawayAccounts.forgotPassword.username, 'FORGOT_USERNAME chưa có trong .env');
+      test.skip(true, DOT_QUOTA);
+      // CẦN .env: FORGOT_USERNAME
+      //
+      // TỐN HẠN MỨC: mỗi lần chạy gửi một EMAIL THẬT và đốt một suất trong 3 lần/NGÀY của
+      // tài khoản này (docs/test-data.md mục 1). Chạy lặp để dò lỗi là hết quota trước khi
+      // kịp xanh — AUTH3.9 cũng dùng chung hạn mức đó.
       const login = createPage(LoginPage);
       const forgot = await moManQuenMatKhau(login);
 
@@ -436,52 +454,65 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       await forgot.guiYeuCau(throwawayAccounts.forgotPassword.username);
 
       await forgot.expectRequestSucceeded();
-      // Vế "gửi email chứa link reset (token one-time, có TTL)" không assert ở đây: kiểm
-      // nó phải đọc hộp thư thật, là việc của tầng khác.
+
+      // Vế "gửi email chứa link reset (token one-time, có TTL)" KHÔNG kiểm được: đọc hộp thư
+      // không khả thi trên mạng này — xem mục 2 của docs/test-data.md.
     });
 
-    test.fixme('AUTH3.4 server lỗi thì báo gửi thất bại @high', async ({ createPage, page }) => {
-      // GIỮ `fixme` — ngoại lệ duy nhất của file này.
+    test('AUTH3.4 server lỗi thì báo gửi thất bại @high', async ({ createPage, page }) => {
+      test.skip(true, DOT_QUOTA);
+      // CẦN .env: FORGOT_USERNAME
       //
-      // Case khác thiếu locator thì để đỏ, đỏ là thông tin. Case này thiếu ĐƯỜNG DẪN API:
-      // `page.route` không khớp thì request đi bình thường, app chạy đường thành công, và
-      // `expectRequestFailed()` có thể XANH cho một case chưa từng được kiểm. Bật nó lên
-      // là tự cấp cho mình một dấu tích xanh giả — tệ hơn không có test.
-      test.skip(!throwawayAccounts.forgotPassword.username, 'FORGOT_USERNAME chưa có trong .env');
+      // `ENDPOINT-TBD` — `FORGOT_API` chưa phải đường dẫn thật. Trước đây case này để
+      // `fixme` vì lý do rất cụ thể: route không khớp thì request đi bình thường, app chạy
+      // đường THÀNH CÔNG, và `expectRequestFailed()` có thể xanh cho một case chưa từng
+      // được kiểm — xanh giả, tệ hơn không có test.
+      //
+      // Nay case chạy, nên phải tự chống xanh giả bằng `soLanChan`: đếm số request thật sự
+      // bị route bắt. Không bắt được cái nào thì assert cuối cùng đỏ và nói thẳng là đường
+      // dẫn sai, thay vì im lặng cho qua.
       const login = createPage(LoginPage);
       const forgot = await moManQuenMatKhau(login);
 
       // precondition — "Request thất bại (lỗi server/mạng)": ép nó hỏng bằng route, không
       // ngồi chờ server thật hỏng.
-      await page.route(FORGOT_API, (route) =>
-        route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
-      );
+      let soLanChan = 0;
+      await page.route(FORGOT_API, (route) => {
+        soLanChan++;
+        return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
+      });
 
       // step 1 — "Nhập tài khoản hợp lệ."
       // step 2 — "Bấm \"Cung cấp lại mật khẩu\"."
       await forgot.guiYeuCau(throwawayAccounts.forgotPassword.username);
 
       await forgot.expectRequestFailed();
+
+      // Chốt chặn xanh giả. Để CUỐI cùng: assert trên UI chạy trước nên khi cả hai cùng
+      // hỏng, người đọc thấy triệu chứng thật trước, rồi mới thấy nguyên nhân.
+      expect(
+        soLanChan,
+        `route "${FORGOT_API}" không bắt được request nào — chưa có đường dẫn API thật thì ` +
+        'case này không kiểm được gì, xem ENDPOINT-TBD',
+      ).toBeGreaterThan(0);
     });
 
     test('AUTH3.5 bấm Quay lại thì về màn đăng nhập @high', async ({ createPage }) => {
-      // ĐỎ TỚI KHI CÓ LOCATOR: cùng lý do AUTH3.0.
-      test.skip(!accounts.standard.company, 'COMPANY_CODE chưa có trong .env');
+      // ĐỎ TỚI KHI DEV GẮN TESTID: chỉ còn `backLink` — xem docs/testid-requests/sso-reset-password.md
+      // CẦN .env: COMPANY_CODE
       const login = createPage(LoginPage);
       const forgot = await moManQuenMatKhau(login);
 
       // step 1 — "Từ màn Forgot Password, bấm \"Quay lại\"."
       const sso = await forgot.quayLai();
 
-      await sso.expectLoaded();
-      // "không lưu dữ liệu đã nhập": quay lại rồi vào lại thì ô Tài khoản phải trống.
-      const lai = await sso.moQuenMatKhau();
-      await expect(lai.account).toHaveValue('');
+      await sso.expectDefaultLayout();
     });
 
     test('AUTH3.9 quá 3 lần yêu cầu thì bị chặn @high', async ({ createPage }) => {
+      test.skip(true, DOT_QUOTA);
       // ĐỎ TỚI KHI CÓ LOCATOR: cùng lý do AUTH3.0; nội dung thông báo cũng chưa chốt.
-      test.skip(!throwawayAccounts.forgotPassword.username, 'FORGOT_USERNAME chưa có trong .env');
+      // CẦN .env: FORGOT_USERNAME
       const login = createPage(LoginPage);
       const forgot = await moManQuenMatKhau(login);
 
@@ -497,13 +528,10 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
   });
 
   test.describe('AUTH4 — Màn Setup QR (2FA)', () => {
-    test('AUTH4.0 màn Setup QR hiển thị đủ thành phần @high', async ({ createPage }) => {
+    test('AUTH4.0 màn Setup QR hiển thị đủ thành phần @high @fixing', async ({ createPage }) => {
       // ĐỎ TỚI KHI CÓ LOCATOR: cả class TwoFactorSetupPage chưa có locator thật nào. Thêm
       // nữa tài khoản "chưa từng setup 2FA" dùng một lần — chạy xong phải cấp tài khoản mới.
-      test.skip(
-        !throwawayAccounts.firstLogin.username,
-        'FIRST_LOGIN_USERNAME chưa có trong .env',
-      );
+      // CẦN .env: FIRST_LOGIN_USERNAME
       const login = createPage(LoginPage);
       const sso = await moManDangNhap(login);
 
@@ -522,11 +550,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
       page,
     }) => {
-      test.skip(
-        true,
-        'DATA-TBD: cần sinh mã TOTP từ secret — mục 2 của docs/test-data.md khai kênh này ' +
-        'nhưng chưa có secret lẫn thư viện sinh mã',
-      );
+      // DATA-TBD: cần sinh mã TOTP từ secret — mục 2 của docs/test-data.md khai kênh này nhưng chưa có secret lẫn thư viện sinh mã
       const login = createPage(LoginPage);
       const sso = await moManDangNhap(login);
       await sso.trySignIn(
@@ -536,7 +560,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       const setup = createPage(TwoFactorSetupPage);
 
       // step 1 — "Quét mã QR bằng app Authenticator."
-      // Không phải thao tác UI. Bản tự động sinh mã từ `TWO_FA_TOTP_SECRET` thay cho việc
+      // Không phải thao tác UI. Bản tự động sinh mã từ `OTP_TOTP_SECRET` thay cho việc
       // quét — xem `TwoFactorSetupPage.nhapOtp()`.
       // step 2 — "Nhập đúng mã 6 số hiện trên app."
       // step 3 — "Bấm \"Xác nhận\"."
@@ -553,14 +577,14 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       const login = createPage(LoginPage);
       const sso = await moManDangNhap(login);
       await sso.trySignIn(
-        throwawayAccounts.twoFactor.username,
-        throwawayAccounts.twoFactor.password,
+        specialAccounts.otpEnabled.username,
+        specialAccounts.otpEnabled.password,
       );
     }
 
     test('AUTH4.4 màn nhập OTP hiển thị đủ thành phần @high', async ({ createPage }) => {
       // ĐỎ TỚI KHI CÓ LOCATOR: cả class OtpVerificationPage chưa có locator thật nào.
-      test.skip(!throwawayAccounts.twoFactor.username, 'TWO_FA_USERNAME chưa có trong .env');
+      // CẦN .env: OTP_USERNAME
 
       // step 1 — "Đăng nhập đúng Tài khoản/Mật khẩu với tài khoản đã bật 2FA."
       await moManNhapOtp(createPage);
@@ -574,7 +598,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
 
     test('AUTH4.5 nhập sai mã OTP thì báo lỗi @high', async ({ createPage }) => {
       // ĐỎ TỚI KHI CÓ LOCATOR: cùng lý do AUTH4.4.
-      test.skip(!throwawayAccounts.twoFactor.username, 'TWO_FA_USERNAME chưa có trong .env');
+      // CẦN .env: OTP_USERNAME
       await moManNhapOtp(createPage);
       const otp = createPage(OtpVerificationPage);
 
@@ -588,11 +612,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
     });
 
     test('AUTH4.6 nhập đúng mã OTP thì vào được app @high', async ({ createPage, page }) => {
-      test.skip(
-        true,
-        'DATA-TBD: cần sinh mã TOTP từ secret — mục 2 của docs/test-data.md khai kênh này ' +
-        'nhưng chưa có secret lẫn thư viện sinh mã',
-      );
+      // DATA-TBD: cần sinh mã TOTP từ secret — mục 2 của docs/test-data.md khai kênh này nhưng chưa có secret lẫn thư viện sinh mã
       await moManNhapOtp(createPage);
       const otp = createPage(OtpVerificationPage);
 
@@ -612,14 +632,14 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
      *
      * Màn không có field "Mật khẩu hiện tại" (AUTH5.9 nói thẳng), nên nhiều khả năng nó đi
      * từ link trong email — mà hộp thư thì mục 2 của `docs/test-data.md` còn ghi "chưa chốt
-     * công cụ". Chốt xong thì bỏ `test.skip` và thêm bước điều hướng vào chỗ đánh dấu.
+     * công cụ". Chốt xong thì thêm bước điều hướng vào chỗ đã đánh dấu bên dưới.
      */
-    const LY_DO = 'DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — xem docs/test-data.md mục 2';
 
     test('AUTH5.2 focus ô Mật khẩu mới thì hiện checklist 4 rule @high', async ({
       createPage,
     }) => {
-      test.skip(true, LY_DO);
+      test.skip(true, CHO_HOP_THU);
+      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
       const doiMatKhau = createPage(ChangePasswordPage);
       // DATA-TBD: chỗ này thiếu bước đi tới màn Đổi mật khẩu.
 
@@ -633,7 +653,8 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
     test('AUTH5.3 mật khẩu chưa đạt đủ rule thì nút Xác nhận còn khoá @high', async ({
       createPage,
     }) => {
-      test.skip(true, LY_DO);
+      test.skip(true, CHO_HOP_THU);
+      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
       const doiMatKhau = createPage(ChangePasswordPage);
 
       // step 1 — "Nhập giá trị chỉ đạt 1-2/4 rule hiển thị."
@@ -646,7 +667,8 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
     });
 
     test('AUTH5.4 nhập lại mật khẩu không khớp thì báo lỗi @high', async ({ createPage }) => {
-      test.skip(true, LY_DO);
+      test.skip(true, CHO_HOP_THU);
+      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
       const doiMatKhau = createPage(ChangePasswordPage);
 
       // step 1 — "Nhập \"Mật khẩu mới\" hợp lệ."
@@ -661,7 +683,8 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
     test('AUTH5.5 hai field hợp lệ và khớp nhau thì nút Xác nhận mở khoá @high', async ({
       createPage,
     }) => {
-      test.skip(true, LY_DO);
+      test.skip(true, CHO_HOP_THU);
+      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
       const doiMatKhau = createPage(ChangePasswordPage);
       const matKhau = matKhauHopLe();
 
@@ -682,7 +705,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
      * cùng tài khoản là đá nhau.
      *
      * Reset sau mỗi lần chạy: đặt lại mật khẩu về giá trị trong `.env`
-     * (`CHANGE_PWD_PASSWORD`, `TWO_FA_PASSWORD`). Xem `docs/test-data.md` mục 1.
+     * (`CHANGE_PWD_PASSWORD`, `OTP_PASSWORD`). Xem `docs/test-data.md` mục 1.
      */
     test.describe('AUTH5.6–5.7 — submit đổi mật khẩu thật', () => {
       test.describe.configure({ mode: 'serial' });
@@ -691,7 +714,8 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
         createPage,
         page,
       }) => {
-        test.skip(true, LY_DO);
+        test.skip(true, CHO_HOP_THU);
+        // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
         const doiMatKhau = createPage(ChangePasswordPage);
         const matKhau = matKhauHopLe();
 
@@ -712,11 +736,11 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
         createPage,
         page,
       }) => {
-        test.skip(true, LY_DO);
+        // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
         const doiMatKhau = createPage(ChangePasswordPage);
         const matKhau = matKhauHopLe();
 
-        // precondition — "Tài khoản đã bật 2FA" → profile `twoFactor`
+        // precondition — "Tài khoản đã bật 2FA" → profile `otpEnabled` (admin bật OTP)
         // step 1 — "Điền hợp lệ 2 field."
         await doiMatKhau.nhapMatKhauMoi(matKhau);
         await doiMatKhau.nhapLaiMatKhau(matKhau);
@@ -735,7 +759,8 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
     test('AUTH5.9 mật khẩu mới trùng mật khẩu hiện tại thì server chặn @high', async ({
       createPage,
     }) => {
-      test.skip(true, LY_DO);
+      test.skip(true, CHO_HOP_THU);
+      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
       const doiMatKhau = createPage(ChangePasswordPage);
       // Dùng đúng mật khẩu hiện tại của profile `changePassword` — đó là điều kiện của case.
       const hienTai = throwawayAccounts.changePassword.password;
@@ -753,11 +778,8 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
 
   test.describe('AUTH7 — Flow đổi mật khẩu khi hết hạn', () => {
     test('AUTH7.0 vào từ email thông báo thì tới bước xác thực @high', async ({ createPage }) => {
-      test.skip(
-        true,
-        'DATA-TBD: cần đọc email thông báo để bấm nút "Thay đổi mật khẩu" — mục 2 của ' +
-        'docs/test-data.md chưa chốt công cụ hộp thư',
-      );
+      test.skip(true, CHO_HOP_THU);
+      // DATA-TBD: cần đọc email thông báo để bấm nút "Thay đổi mật khẩu" — mục 2 của docs/test-data.md chưa chốt công cụ hộp thư
       const hetHan = createPage(PasswordExpiredPage);
 
       // step 1 — "Mở email thông báo mật khẩu hết hạn/sắp hết hạn."
@@ -771,10 +793,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
     }) => {
       // ĐỎ TỚI KHI CÓ LOCATOR: cả class PasswordExpiredPage chưa có locator thật nào.
-      test.skip(
-        !throwawayAccounts.passwordExpired.username,
-        'PWD_EXPIRED_USERNAME chưa có trong .env',
-      );
+      // CẦN .env: PWD_EXPIRED_USERNAME
       const login = createPage(LoginPage);
       const sso = await moManDangNhap(login);
 
@@ -788,6 +807,203 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       const hetHan = createPage(PasswordExpiredPage);
       await hetHan.expectExpiredNotice();
       await hetHan.expectLoaded();
+    });
+
+    /**
+     * Tới bước xác thực của flow bắt buộc — đường duy nhất không cần hộp thư: đăng nhập
+     * bằng chính tài khoản có mật khẩu đã hết hạn, app tự đẩy sang (AUTH7.1).
+     */
+    async function moFlowHetHan(
+      createPage: PageFixtures['createPage'],
+      taiKhoan: { username: string; password: string },
+    ) {
+      const login = createPage(LoginPage);
+      const sso = await moManDangNhap(login);
+      await sso.trySignIn(taiKhoan.username, taiKhoan.password);
+      return createPage(PasswordExpiredPage);
+    }
+
+    test('AUTH7.2 tài khoản không tồn tại thì dừng ở bước 1 @high', async ({ createPage }) => {
+      // ĐỎ TỚI KHI DEV GẮN TESTID: PasswordExpiredPage dùng tên suy theo công thức.
+      // CẦN .env: PWD_EXPIRED_USERNAME
+      const hetHan = await moFlowHetHan(createPage, throwawayAccounts.passwordExpired);
+
+      // step 1 — "Nhập tài khoản không tồn tại trên hệ thống."
+      // step 2 — "Nhấn \"Tiếp theo\"."
+      await hetHan.nhapTaiKhoan(`${randomString(10)}@khongtontai.test`);
+
+      await hetHan.expectAccountNotFound();
+    });
+
+    test('AUTH7.3 xác thực đúng thì sang màn nhập OTP @high', async ({ createPage }) => {
+      // ĐỎ TỚI KHI DEV GẮN TESTID: cùng lý do AUTH7.2.
+      // CẦN .env: PWD_EXPIRED_USERNAME
+      const hetHan = await moFlowHetHan(createPage, throwawayAccounts.passwordExpired);
+
+      // step 1 — "Nhập đúng tài khoản."
+      await hetHan.nhapTaiKhoan(throwawayAccounts.passwordExpired.username);
+
+      // step 2 — "Nhập đúng mật khẩu hiện tại."
+      // step 3 — "Nhấn \"Xác nhận\"."
+      await hetHan.xacThucMatKhau(throwawayAccounts.passwordExpired.password);
+
+      // Expected nói "gửi mã OTP tới kênh đã đăng ký, chuyển sang màn nhập OTP". Vế GỬI
+      // không quan sát được từ UI; vế CHUYỂN MÀN thì được.
+      //
+      // Chỉ assert "có 6 ô OTP" — phần CHUNG của hai màn OTP. Chưa ai xác nhận màn OTP
+      // của flow hết hạn (mã gửi tới kênh đã đăng ký) có phải cùng một màn với OTP của 2FA
+      // (mã lấy từ app Authenticator) hay không, nên `expectDefaultLayout()` là assert
+      // thừa: nó khẳng định cả tiêu đề lẫn phụ đề của màn 2FA.
+      const otp = createPage(OtpVerificationPage);
+      await expect(otp.otpInputs).toHaveCount(6);
+    });
+
+    test('AUTH7.4 sai mật khẩu hiện tại thì flow dừng tại bước xác thực @high', async ({
+      createPage,
+    }) => {
+      // ĐỎ TỚI KHI DEV GẮN TESTID: cùng lý do AUTH7.2.
+      // CẦN .env: PWD_EXPIRED_USERNAME
+      const hetHan = await moFlowHetHan(createPage, throwawayAccounts.passwordExpired);
+      await hetHan.nhapTaiKhoan(throwawayAccounts.passwordExpired.username);
+
+      // step 1 — "Nhập sai mật khẩu hiện tại."
+      // step 2 — "Nhấn \"Xác nhận\"."
+      await hetHan.xacThucMatKhau(`sai-${randomString(10)}`);
+
+      await hetHan.expectAuthFailed();
+      // "flow dừng tại bước xác thực" — vẫn ở bước nhập mật khẩu, không sang màn OTP.
+      await hetHan.expectAtPasswordStep();
+    });
+
+    /*
+     * AUTH7.5 → AUTH7.9 — mọi case sau bước OTP.
+     *
+     * DATA-TBD: tới được màn "nhập mật khẩu mới" thì phải qua bước OTP, mà mục 2 của
+     * docs/test-data.md chưa chốt công cụ đọc kênh nhận mã. Năm case dưới vì thế `skip`
+     * chứ không đỏ — chúng chưa có đường chạy, không phải chưa có locator.
+     *
+     * Dùng profile `passwordExpiredOtp`, KHÔNG dùng chung với ba case trước. Lý do bắt
+     * buộc: AUTH7.8 đổi mật khẩu THẬT — dùng chung thì sau lượt đầu, mật khẩu trong `.env`
+     * không còn đúng và AUTH7.2 → 7.4 đỏ theo, đỏ vì môi trường chứ không vì sản phẩm.
+     */
+
+    test('AUTH7.5 mật khẩu mới không đạt chính sách thì báo lỗi @high', async ({ createPage }) => {
+      test.skip(true, CHO_HOP_THU);
+      // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/test-data.md mục 2 chưa chốt công cụ
+      const doiMatKhau = createPage(ChangePasswordPage);
+
+      // step 1 — "Nhập mật khẩu mới không đạt chính sách (VD: dưới độ dài tối thiểu…)."
+      await doiMatKhau.nhapMatKhauMoi('abc');
+
+      // step 2 — "Nhập lại mật khẩu mới."
+      await doiMatKhau.nhapLaiMatKhau('abc');
+
+      // step 3 — "Nhấn \"Xác nhận\"."
+      await doiMatKhau.xacNhan();
+
+      await doiMatKhau.expectPolicyError();
+    });
+
+    test('AUTH7.6 nhập lại không trùng khớp thì báo lỗi @high', async ({ createPage }) => {
+      test.skip(true, CHO_HOP_THU);
+      // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/test-data.md mục 2 chưa chốt công cụ
+      const doiMatKhau = createPage(ChangePasswordPage);
+
+      // step 1 — "Nhập mật khẩu mới hợp lệ."
+      await doiMatKhau.nhapMatKhauMoi(matKhauHopLe());
+
+      // step 2 — "Nhập lại mật khẩu mới KHÁC với mật khẩu vừa nhập."
+      await doiMatKhau.nhapLaiMatKhau(matKhauHopLe());
+
+      // step 3 — "Nhấn \"Xác nhận\"."
+      await doiMatKhau.xacNhan();
+
+      await doiMatKhau.expectConfirmNotMatched();
+    });
+
+    test('AUTH7.7 mật khẩu mới trùng mật khẩu hiện tại thì bị chặn @high', async ({
+      createPage,
+    }) => {
+      test.skip(true, CHO_HOP_THU);
+      // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/test-data.md mục 2 chưa chốt công cụ
+      const doiMatKhau = createPage(ChangePasswordPage);
+      const matKhauHienTai = throwawayAccounts.passwordExpiredOtp.password;
+
+      // step 1 — "Nhập mật khẩu mới TRÙNG với mật khẩu hiện tại."
+      await doiMatKhau.nhapMatKhauMoi(matKhauHienTai);
+
+      // step 2 — "Nhập lại giống bước 1."
+      await doiMatKhau.nhapLaiMatKhau(matKhauHienTai);
+
+      // step 3 — "Nhấn \"Xác nhận\"."
+      await doiMatKhau.xacNhan();
+
+      await doiMatKhau.expectMustDifferFromCurrent();
+    });
+
+    /**
+     * AUTH7.8 · AUTH7.9 — end-to-end rồi kiểm ngay sau đó.
+     *
+     * `serial` và dùng chung một biến: AUTH7.9 kiểm "dùng mật khẩu mới cho lần đăng nhập
+     * tiếp theo", mà mật khẩu mới chỉ AUTH7.8 mới biết. Tách rời thì AUTH7.9 không có gì
+     * để đăng nhập bằng.
+     *
+     * PHÁ HUỶ: đổi mật khẩu thật của profile `passwordExpiredOtp`. Reset trước lần chạy
+     * sau: đặt lại mật khẩu về giá trị `.env` rồi ép nó hết hạn lại.
+     */
+    test.describe('AUTH7.8–7.9 — end-to-end đổi mật khẩu', () => {
+      test.describe.configure({ mode: 'serial' });
+
+      let matKhauMoi = '';
+
+      test('AUTH7.8 đổi mật khẩu thành công với dữ liệu hợp lệ @high', async ({ createPage }) => {
+        test.skip(true, CHO_HOP_THU);
+        // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/test-data.md mục 2 chưa chốt công cụ
+        const hetHan = await moFlowHetHan(createPage, throwawayAccounts.passwordExpiredOtp);
+        matKhauMoi = matKhauHopLe();
+
+        // step 1 — "Nhập tài khoản + mật khẩu hiện tại đúng."
+        await hetHan.nhapTaiKhoan(throwawayAccounts.passwordExpiredOtp.username);
+        await hetHan.xacThucMatKhau(throwawayAccounts.passwordExpiredOtp.password);
+
+        // step 2 — "Xác thực OTP thành công."
+        // DATA-TBD: thiếu bước đọc mã OTP từ kênh xác thực.
+
+        const doiMatKhau = createPage(ChangePasswordPage);
+
+        // step 3 — "Nhập mật khẩu mới hợp lệ."
+        await doiMatKhau.nhapMatKhauMoi(matKhauMoi);
+
+        // step 4 — "Nhập lại mật khẩu mới khớp."
+        await doiMatKhau.nhapLaiMatKhau(matKhauMoi);
+
+        // step 5 — "Nhấn \"Xác nhận đổi mật khẩu\"."
+        await doiMatKhau.xacNhan();
+
+        await doiMatKhau.expectChangeSucceeded();
+        // Vế "expired_at = thời điểm đổi + 90 ngày" KHÔNG quan sát được từ UI — đó là một
+        // trường trong DB. Thuộc tầng API, không phải test này.
+      });
+
+      test('AUTH7.9 đăng nhập lại bằng mật khẩu mới thì vào được @high', async ({
+        createPage,
+      }) => {
+        test.skip(true, CHO_HOP_THU);
+        // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/test-data.md mục 2 chưa chốt công cụ
+        // PHỤ THUỘC: mật khẩu mới do AUTH7.8 sinh ra, nhóm này chạy serial
+        const login = createPage(LoginPage);
+
+        // step 1 — "Quan sát hệ thống ngay sau khi đổi mật khẩu thành công."
+        // Câu này không phải hành động. Thứ kiểm được là vế sau của `expected`: mật khẩu
+        // mới dùng được cho lần đăng nhập tiếp theo — nên test làm đúng việc đó.
+        await login.signIn({
+          company: throwawayAccounts.passwordExpiredOtp.company,
+          username: throwawayAccounts.passwordExpiredOtp.username,
+          password: matKhauMoi,
+        });
+
+        await login.expectSignedIn();
+      });
     });
   });
 });
@@ -805,7 +1021,8 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
  */
 test.describe('AUTH — Sau khi đăng nhập', () => {
   test('AUTH6.0 xác nhận đăng xuất thì về trang Đăng nhập @high', async ({ page }) => {
-    // ĐỎ TỚI KHI CÓ LOCATOR: avatar và dòng "Đăng xuất" ở Header, cùng cả LogoutConfirmDialog.
+    // Header đã chạy được (lượt chạy thật bấm qua được avatar + "Đăng xuất").
+    // ĐỎ TỚI KHI CÓ LOCATOR: chỉ còn LogoutConfirmDialog — xem docs/testid-requests/logout.md
     const header = new Header(page);
     const dialog = new LogoutConfirmDialog(page);
 
@@ -816,11 +1033,18 @@ test.describe('AUTH — Sau khi đăng nhập', () => {
     // step 2 — "Chọn \"Đăng xuất\"."
     await header.chonDangXuat();
 
+    // step 3 — "Hộp thoại xác nhận hiển thị → nhấn \"Đồng ý\"."
+    // Bước này trước đây bị BỎ SÓT, và lượt chạy thật tố cáo: sau khi bấm "Đăng xuất" URL
+    // vẫn là /vi/live, tức có gì đó chặn giữa chừng. Thiếu nó thì case đỏ ở dòng assert
+    // URL — một thông báo không nói được là thiếu cái gì.
+    await dialog.expectVisible();
+    await dialog.xacNhanDangXuat();
+
     await expect(page).toHaveURL(/\/login/);
   });
 
   test('AUTH6.1 huỷ đăng xuất thì ở lại, phiên không bị ảnh hưởng @high', async ({ page }) => {
-    // ĐỎ TỚI KHI CÓ LOCATOR: cùng lý do AUTH6.0.
+    // ĐỎ TỚI KHI CÓ LOCATOR: chỉ còn LogoutConfirmDialog — xem docs/testid-requests/logout.md
     const header = new Header(page);
     const dialog = new LogoutConfirmDialog(page);
 

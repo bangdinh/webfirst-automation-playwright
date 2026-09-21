@@ -15,6 +15,22 @@ import { envNumber, envVar } from 'qc-kit/config';
  *
  * Danh sách đầy đủ case nào cần gì: `docs/test-data.md`.
  */
+/**
+ * Giá trị đánh dấu "đã biết là cần, đang chờ người cấp" — khác hẳn để trống, vốn có
+ * nghĩa "chưa ai xét tới". Danh sách và thứ tự cấp: `docs/account-provisioning.md`.
+ *
+ * `taiKhoanVar` coi nó là CHƯA CÓ, y hệt chuỗi rỗng. Đó là điểm mấu chốt: nếu để
+ * nguyên chuỗi này lọt vào form đăng nhập thì hơn chục case sẽ đỏ với "Tài khoản hoặc
+ * mật khẩu không đúng" — một thông báo không hề nói ra rằng thứ còn thiếu là tài khoản.
+ * Đọc nó thành rỗng thì `test.skip(!...username)` vẫn chặn đúng, và người đọc `.env`
+ * vẫn thấy ngay cái nào đang chờ.
+ */
+export const CHO_CAP = 'WAITING_ACCOUNT';
+
+const taiKhoanVar = (key: string): string => {
+  const giaTri = envVar(key, '');
+  return giaTri === CHO_CAP ? '' : giaTri;
+};
 export const accounts = {
   get standard() {
     return {
@@ -43,16 +59,16 @@ export const specialAccounts = {
   get expired() {
     return {
       company: envVar('COMPANY_CODE', ''),
-      username: envVar('EXPIRED_USERNAME', ''),
-      password: envVar('EXPIRED_PASSWORD', ''),
+      username: taiKhoanVar('EXPIRED_USERNAME'),
+      password: taiKhoanVar('EXPIRED_PASSWORD'),
     };
   },
   /** Tài khoản bị vô hiệu hoá — chỉ Owner/Admin mở lại được. AUTH2.12 */
   get disabled() {
     return {
       company: envVar('COMPANY_CODE', ''),
-      username: envVar('DISABLED_USERNAME', ''),
-      password: envVar('DISABLED_PASSWORD', ''),
+      username: taiKhoanVar('DISABLED_USERNAME'),
+      password: taiKhoanVar('DISABLED_PASSWORD'),
     };
   },
   /**
@@ -62,22 +78,54 @@ export const specialAccounts = {
   get noPermission() {
     return {
       company: envVar('COMPANY_CODE', ''),
-      username: envVar('NO_PERMISSION_USERNAME', ''),
-      password: envVar('NO_PERMISSION_PASSWORD', ''),
+      username: taiKhoanVar('NO_PERMISSION_USERNAME'),
+      password: taiKhoanVar('NO_PERMISSION_PASSWORD'),
     };
   },
   /** Username có thật nhưng thuộc tenant KHÁC với COMPANY_CODE. AUTH2.15 */
   get otherTenant() {
     return {
-      username: envVar('OTHER_TENANT_USERNAME', ''),
-      password: envVar('OTHER_TENANT_PASSWORD', ''),
+      username: taiKhoanVar('OTHER_TENANT_USERNAME'),
+      password: taiKhoanVar('OTHER_TENANT_PASSWORD'),
     };
   },
   /** Đã tồn tại ở cả IdP lẫn app — đăng nhập SSO phải vào thẳng. AUTH2.4 */
   get ssoExisting() {
     return {
-      username: envVar('SSO_EXISTING_USERNAME', ''),
-      password: envVar('SSO_EXISTING_PASSWORD', ''),
+      username: taiKhoanVar('SSO_EXISTING_USERNAME'),
+      password: taiKhoanVar('SSO_EXISTING_PASSWORD'),
+    };
+  },
+  /**
+   * Tài khoản RIÊNG cho mọi case phải nhập OTP khi đăng nhập.
+   * AUTH2.17 · AUTH4.4 · AUTH4.5 · AUTH4.6 · AUTH5.7
+   *
+   * **OTP do ADMIN bật, không phải test bật.** Đó là lý do nó nằm ở nhóm trạng thái cố
+   * định chứ không phải nhóm phá huỷ: suite chỉ đăng nhập và nhập mã, không bao giờ tự
+   * bật/tắt 2FA cho nó. Trạng thái của nó là hợp đồng với người quản trị môi trường.
+   *
+   * Vì thế **case nào làm đổi trạng thái 2FA thì KHÔNG được dùng tài khoản này**:
+   *
+   *   AUTH4.0 · AUTH4.3   setup 2FA lần đầu   → `throwawayAccounts.firstLogin`
+   *   AUTH4.9             khoá do sai OTP     → cần tài khoản riêng, chưa cấp (part 10)
+   *   AUTH4.11            tắt 2FA             → cần tài khoản riêng, chưa cấp (part 10)
+   *
+   * Dùng nhầm là hỏng đúng thứ admin vừa dựng, và lần chạy sau phải đi nhờ dựng lại.
+   *
+   * `totpSecret` phải XIN LÚC ADMIN BẬT OTP — sau đó không lấy lại được, và không có nó
+   * thì mọi case "nhập đúng mã 6 số" (AUTH4.6 · AUTH7.13) không tự động được.
+   * `backupCodes` ngăn cách bằng dấu phẩy, phục vụ AUTH4.10.
+   */
+  get otpEnabled() {
+    return {
+      company: envVar('COMPANY_CODE', ''),
+      username: taiKhoanVar('OTP_USERNAME'),
+      password: taiKhoanVar('OTP_PASSWORD'),
+      totpSecret: taiKhoanVar('OTP_TOTP_SECRET'),
+      backupCodes: taiKhoanVar('OTP_BACKUP_CODES')
+        .split(',')
+        .map((code) => code.trim())
+        .filter(Boolean),
     };
   },
 } as const;
@@ -102,8 +150,8 @@ export const throwawayAccounts = {
   get lockout() {
     return {
       company: envVar('COMPANY_CODE', ''),
-      username: envVar('LOCKOUT_USERNAME', ''),
-      password: envVar('LOCKOUT_PASSWORD', ''),
+      username: taiKhoanVar('LOCKOUT_USERNAME'),
+      password: taiKhoanVar('LOCKOUT_PASSWORD'),
     };
   },
   /**
@@ -113,7 +161,7 @@ export const throwawayAccounts = {
    * CHẠY LẠI: hạn mức reset theo NGÀY — chạy CI hai lượt trong ngày là đụng trần.
    */
   get forgotPassword() {
-    return { username: envVar('FORGOT_USERNAME', '') };
+    return { username: taiKhoanVar('FORGOT_USERNAME') };
   },
   /**
    * CHƯA TỪNG setup 2FA. AUTH4.0 · AUTH4.3
@@ -123,43 +171,48 @@ export const throwawayAccounts = {
    */
   get firstLogin() {
     return {
-      username: envVar('FIRST_LOGIN_USERNAME', ''),
-      password: envVar('FIRST_LOGIN_PASSWORD', ''),
+      username: taiKhoanVar('FIRST_LOGIN_USERNAME'),
+      password: taiKhoanVar('FIRST_LOGIN_PASSWORD'),
     };
   },
   /**
-   * ĐÃ bật 2FA, returning user. AUTH2.17 · AUTH4.4 → AUTH4.11 · AUTH5.7
+   * Mật khẩu ĐÃ hết hạn — dùng cho các bước ĐẦU của flow bắt buộc, chưa đi tới đích.
+   * AUTH2.11 · AUTH7.0 · AUTH7.1 · AUTH7.2 · AUTH7.3 · AUTH7.4
    *
-   * `totpSecret` là thứ phải XIN LÚC TẠO tài khoản — sau đó không lấy lại được, và không
-   * có nó thì mọi case "nhập đúng mã 6 số" không tự động được (AUTH4.3 · 4.6 · 7.13).
-   * `backupCodes` ngăn cách bằng dấu phẩy, phục vụ AUTH4.10.
+   * Những case này không hoàn tất việc đổi mật khẩu: chúng dừng ở bước nhập sai tài khoản,
+   * sai mật khẩu hiện tại, hoặc vừa tới màn OTP. Tài khoản vì thế còn nguyên trạng thái.
    *
-   * PHÁ: AUTH4.9 khoá theo OTP sai, AUTH4.11 tắt 2FA.
-   * CHẠY LẠI: bật lại 2FA và cấp secret mới.
-   */
-  get twoFactor() {
-    return {
-      company: envVar('COMPANY_CODE', ''),
-      username: envVar('TWO_FA_USERNAME', ''),
-      password: envVar('TWO_FA_PASSWORD', ''),
-      totpSecret: envVar('TWO_FA_TOTP_SECRET', ''),
-      backupCodes: envVar('TWO_FA_BACKUP_CODES', '')
-        .split(',')
-        .map((code) => code.trim())
-        .filter(Boolean),
-    };
-  },
-  /**
-   * Mật khẩu ĐÃ hết hạn. AUTH2.11 · toàn bộ AUTH7 (15 case)
-   *
-   * PHÁ: AUTH7.8 đổi mật khẩu thật, và hạn mới tính lại 90 ngày.
-   * CHẠY LẠI: đặt lại mật khẩu về giá trị trong .env và ép nó hết hạn lại.
+   * PHÁ: trên lý thuyết không, nhưng đăng nhập sai nhiều lần vẫn có thể chạm ngưỡng khoá.
+   * CHẠY LẠI: bình thường không cần làm gì.
    */
   get passwordExpired() {
     return {
       company: envVar('COMPANY_CODE', ''),
-      username: envVar('PWD_EXPIRED_USERNAME', ''),
-      password: envVar('PWD_EXPIRED_PASSWORD', ''),
+      username: taiKhoanVar('PWD_EXPIRED_USERNAME'),
+      password: taiKhoanVar('PWD_EXPIRED_PASSWORD'),
+    };
+  },
+  /**
+   * Mật khẩu ĐÃ hết hạn, dùng RIÊNG cho các case đi hết flow. AUTH7.5 → AUTH7.9
+   *
+   * Tách khỏi `passwordExpired` vì hai lý do, và lý do thứ hai mới là lý do bắt buộc:
+   *
+   * 1. Nhóm này phải qua được bước OTP, tức cần một kênh nhận mã đọc được — `otpChannel`
+   *    ghi địa chỉ email hoặc số điện thoại mà hệ thống gửi mã tới.
+   * 2. **AUTH7.8 đổi mật khẩu THẬT.** Dùng chung tài khoản với AUTH7.2 → 7.4 thì sau lượt
+   *    đầu, mật khẩu trong `.env` không còn đúng và ba case kia đỏ — đỏ vì môi trường,
+   *    không vì sản phẩm.
+   *
+   * PHÁ: mật khẩu đổi thật, và hạn mới tính lại 90 ngày kể từ lúc đổi.
+   * CHẠY LẠI: đặt lại mật khẩu về giá trị trong .env, rồi ép nó hết hạn lại.
+   */
+  get passwordExpiredOtp() {
+    return {
+      company: envVar('COMPANY_CODE', ''),
+      username: taiKhoanVar('PWD_EXPIRED_OTP_USERNAME'),
+      password: taiKhoanVar('PWD_EXPIRED_OTP_PASSWORD'),
+      /** Email hoặc SĐT nhận mã OTP của flow — nơi sẽ phải đọc mã khi chốt được kênh. */
+      otpChannel: taiKhoanVar('PWD_EXPIRED_OTP_CHANNEL'),
     };
   },
   /**
@@ -171,8 +224,8 @@ export const throwawayAccounts = {
   get changePassword() {
     return {
       company: envVar('COMPANY_CODE', ''),
-      username: envVar('CHANGE_PWD_USERNAME', ''),
-      password: envVar('CHANGE_PWD_PASSWORD', ''),
+      username: taiKhoanVar('CHANGE_PWD_USERNAME'),
+      password: taiKhoanVar('CHANGE_PWD_PASSWORD'),
     };
   },
   /**
@@ -183,8 +236,8 @@ export const throwawayAccounts = {
    */
   get ssoNew() {
     return {
-      username: envVar('SSO_NEW_USERNAME', ''),
-      password: envVar('SSO_NEW_PASSWORD', ''),
+      username: taiKhoanVar('SSO_NEW_USERNAME'),
+      password: taiKhoanVar('SSO_NEW_PASSWORD'),
     };
   },
 } as const;
