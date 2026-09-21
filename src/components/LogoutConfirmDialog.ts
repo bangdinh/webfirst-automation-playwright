@@ -10,18 +10,19 @@ import { BaseComponent } from 'qc-kit/core';
  * Hai lối ra của hộp thoại là HAI case khác nhau (AUTH6.0 đồng ý, AUTH6.1 huỷ) nên cả hai
  * nút đều là locator riêng, không gộp.
  *
- * TẠM THỜI: chưa có locator thật nào — toàn bộ `LOCATOR-TBD` phải lấy từ DOM ở bước 3.
+ * TESTID-ĐỀ-NGHỊ: ba tên dưới suy theo docs/data-testid-convention.md, module `logout`
+ * (docs/test-structure.md mục 7). Dev chưa gắn — xem docs/testid-requests/logout.md.
  */
 export class LogoutConfirmDialog extends BaseComponent {
-  constructor(page: Page, root: Locator = page.getByTestId('LOCATOR-TBD-logout-dialog')) {
+  constructor(page: Page, root: Locator = page.getByRole('dialog')) {
     super(page, root);
   }
 
-  // LOCATOR-TBD: nút "Đồng ý" trong hộp thoại (AUTH6.0 step 3)
-  readonly dongY = this.root.getByTestId('LOCATOR-TBD-logout-confirm-btn');
+  // TESTID-ĐỀ-NGHỊ: nút "Đồng ý" trong hộp thoại (AUTH6.0 step 3)
+  readonly dongY = this.root.getByTestId('shell-logout-confirm');
 
-  // LOCATOR-TBD: nút "Huỷ" trong hộp thoại (AUTH6.1 step 3)
-  readonly huy = this.root.getByTestId('LOCATOR-TBD-logout-cancel-btn');
+  // TESTID-ĐỀ-NGHỊ: nút "Huỷ" trong hộp thoại (AUTH6.1 step 3)
+  readonly huy = this.root.getByTestId('shell-logout-cancel');
 
   async xacNhanDangXuat(): Promise<void> {
     await this.step('xác nhận đăng xuất', async () => {

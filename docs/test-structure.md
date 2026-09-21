@@ -84,8 +84,7 @@ tests/ui/manage/manage.spec.ts
 | Địa điểm | `src/pages/location/LocationPage.ts` | `tests/ui/location/location.spec.ts` |
 | Xem lại | `src/pages/playback/PlaybackPage.ts` | `tests/ui/playback/playback.spec.ts` |
 
-Màn hình **không có trong bảng này** → `gen-script` hỏi người, không tự tạo khu vực mới.
-Thêm khu vực là quyết định của người, vì nó đẻ ra hai thư mục và một quy ước tên.
+Màn hình **không có trong bảng này** → `gen-script` tự tạo khu vực mới và update lại ##4
 
 ## 5. Import
 
@@ -108,3 +107,101 @@ giữa Giám sát và Quản lý là hành vi của riêng nó.
 
 Giữ nguyên vị trí này. Dời sang `src/components/` sẽ làm `tests/ui/header/` trở thành khu
 vực không có page object tương ứng — lệch với luật ở mục 3.
+
+## 7. Module của `data-testid`
+
+Công thức đặt tên là hợp đồng với Dev, viết ở
+[`data-testid-convention.md`](data-testid-convention.md):
+
+```
+<module>-<field-hoặc-hành-động>-<loại-phần-tử>[-<qualifier>]
+```
+
+Token `<module>` **không suy được** từ file case lẫn từ code — nó là tên khu vực do Dev
+đặt. Bảng dưới là **nơi khai duy nhất** của nó. `src/testid-convention.test.ts` đọc bảng
+này và bắt mọi `getByTestId` trong file phải mở đầu bằng đúng module đã khai.
+
+Đổi tên một module vì thế là: sửa **một ô** ở đây → `npm run verify` đỏ và liệt kê từng
+id phải sửa → `sed` theo danh sách đó.
+
+| File | Module | Nguồn |
+|---|---|---|
+| `src/pages/login/LoginPage.ts` | `login` | đề nghị |
+| `src/pages/login/SsoLoginPage.ts` | `sso-login` | Dev |
+| `src/pages/login/ForgotPasswordPage.ts` | `sso-reset-password` | Dev |
+| `src/pages/login/ChangePasswordPage.ts` | `change-pwd` | đề nghị |
+| `src/pages/login/PasswordExpiredPage.ts` | `pwd-expired` | đề nghị |
+| `src/pages/login/OtpVerificationPage.ts` | `sso-otp` | Dev |
+| `src/pages/login/TwoFactorSetupPage.ts` | `sso-otp` | Dev |
+| `src/pages/header/Header.ts` | `shell` | Dev |
+| `src/components/LogoutConfirmDialog.ts` | `shell` | Dev |
+
+**Cột Nguồn.** `Dev` = đã gắn thật trong sản phẩm, đọc được từ DOM. `đề nghị` = tên QA suy
+theo công thức, đang chờ Dev gắn. Cả hai đều bị bắt cho khớp: giữ một module nhất quán
+trong một file là việc của bộ test, không đợi Dev trả lời mới làm.
+
+File **không có `getByTestId` nào** thì không cần khai — `LoginPage.ts` đang là một ví dụ,
+nó còn dùng `#company` và `getByRole`. Có id mà chưa khai thì test đỏ: đó là cách bắt một
+màn mới phải chốt module trước khi locator kịp sinh sôi.
+
+## 8. Tầng API
+
+**Thư mục gốc:** `src/api/`, bốn lớp theo đúng khuôn của qc-kit. Spec API ở `tests/api/`,
+chạy ở project `api` (không browser).
+
+```
+src/api/models/         kiểu request/response — hợp đồng với backend
+src/api/clients/        một tài nguyên một class, kế thừa BaseApiClient của kit
+src/api/helpers/        dựng payload, kể cả payload SAI cho test âm
+src/api/verifications/  assert thuộc về tài nguyên, bọc step() cho report
+tests/api/              spec — chỉ ghép bốn tầng trên thành kịch bản
+```
+
+**Quy ước tên:** client và verification là PascalCase theo tài nguyên
+(`UsersClient`, `UserVerification`); model là kebab-case kèm hậu tố `.model.ts`. Method của
+client đặt theo **việc nghiệp vụ**, không theo động từ HTTP.
+
+**Ranh giới assert:** "một bản ghi hợp lệ trông thế nào" thuộc `verifications/` — hai chục
+test đều cần nó. "Sau khi làm X thì trạng thái phải là Y" là kịch bản, ở lại spec. Nhầm
+chiều thứ hai vào `verifications/` thì class đó phình thành nơi chứa mọi logic test.
+
+**Dựng client:** `createClient(XClient)` từ fixture của dự án — nó cấp sẵn `API_URL` làm
+baseURL và gắn bearer token. Ngoại lệ duy nhất là client gọi dịch vụ BÊN THỨ BA: dựng bằng
+`new X(request)` để không đẩy token của sản phẩm ra ngoài.
+
+
+### FE gọi Server Action, không gọi REST — đừng test nhầm tầng
+
+Đo ngày 21/09/2026: bấm "Thêm địa điểm" trên app sinh ra request này —
+
+```
+POST https://beta-vmsmart-next.fcam.vn/vi/places      (CÙNG url với trang)
+accept: text/x-component
+next-action: 706cde8c9ad5bf71c5b17544b30caa0c1e22b4393c
+Cookie: session_token=...                             (KHÔNG có Authorization)
+body: ["Quận Cam","$undefined","$undefined"]          (mảng tham số theo vị trí)
+```
+
+Đó là **Next.js Server Action**, không phải REST API. Next.js đọc cookie ở server rồi gọi
+backend server-side — nên chụp network của browser KHÔNG thấy call API nào, và
+`brmBaseUri` trong collection Bruno trỏ vào host này thì chỉ trả về HTML của Next.js.
+
+**Không viết test HTTP nhắm thẳng vào nó.** `next-action` là id không đoán được, và Next.js
+**xoay nó giữa các bản build** — tài liệu nói rõ id được tính lại theo bản deploy, chậm nhất
+14 ngày một lần kể cả khi source không đổi. Ghim cứng id vào test thì mỗi lần deploy test đỏ
+với `Failed to find Server Action`, trông y hệt một bug sản phẩm. Ghim được nó cần
+`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` — biến môi trường phía deploy, không thuộc quyền đội test.
+
+Ba cách đúng, theo thứ tự:
+
+1. **Thao tác tạo/sửa/xoá trên app → test qua UI.** Nó vốn là mutation của người dùng.
+2. **Cần assert ở tầng HTTP** thì vẫn kích bằng UI rồi bắt request/response bằng
+   `page.waitForResponse` — không ghim id nào cả.
+3. **Test API thật** thì nhắm vào gateway backend (collection Bruno), không nhắm BFF của
+   Next.js. Đang chặn vì chưa ai cho biết host thật của gateway.
+
+Kéo theo một điều về xác thực: hop FE→BFF dùng **cookie**, không dùng `Authorization: Bearer`.
+`createApiFixture` của dự án đang gắn Bearer — đúng cho gateway, KHÔNG đúng cho Server Action.
+
+**Đầu vào:** collection Bruno đặt ở `api-collection/`, cách dịch sang bốn tầng xem
+[`api-collection/README.md`](../api-collection/README.md).

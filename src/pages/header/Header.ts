@@ -1,5 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { BaseComponent } from 'qc-kit/core';
+import { accounts } from '../../data/credentials';
 
 /**
  * Thanh điều hướng chính ở đầu trang — xuất hiện trên mọi màn hình sau khi đăng nhập.
@@ -12,7 +13,15 @@ import { BaseComponent } from 'qc-kit/core';
  * `page.locator('header')`, sẽ dính strict mode violation.
  */
 export class Header extends BaseComponent {
-  constructor(page: Page, root: Locator = page.getByRole('banner')) {
+  /**
+   * `emailHienThi` là email mà thanh header đang hiện — mặc định lấy tài khoản mà project
+   * `chromium` dùng để đăng nhập. Phiên đăng nhập bằng tài khoản khác thì truyền vào.
+   */
+  constructor(
+    page: Page,
+    root: Locator = page.getByRole('banner'),
+    private readonly emailHienThi: string = accounts.standard.username,
+  ) {
     super(page, root);
   }
 
@@ -24,8 +33,18 @@ export class Header extends BaseComponent {
   readonly giamSat = this.root.getByRole('link', { name: 'Giám sát', exact: true });
   readonly quanLy = this.root.getByRole('link', { name: 'Quản lý', exact: true });
 
-  // LOCATOR-TBD: tên tài khoản / avatar ở góc trên bên phải (AUTH6.0 step 1)
-  readonly taiKhoan = this.root.locator('//span[@aria-label="taipm7@fpt.com"]');
+  /**
+   * Nút mở menu tài khoản ở góc trên bên phải (AUTH6.0 step 1).
+   *
+   * LOCATOR-TBD: chờ Dev gắn `shell-account-menu-btn`. Tạm thời bắt theo `aria-label` —
+   * tầng ① của thang locator, và đã kiểm `getByLabel` khớp đúng một `<span aria-label>`.
+   *
+   * Nhãn chính là email đang đăng nhập nên phải SUY từ tài khoản đang dùng: hardcode email
+   * của một người là locator chỉ chạy được trên máy người đó.
+   */
+  get taiKhoan(): Locator {
+    return this.root.getByLabel(this.emailHienThi, { exact: true });
+  }
 
   // LOCATOR-TBD: dòng "Đăng xuất" trong menu tài khoản (AUTH6.0 step 2).
   // Menu mở ra có thể nằm NGOÀI `root` (portal), nên locator này neo vào `page` chứ không

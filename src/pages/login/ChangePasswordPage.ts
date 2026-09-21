@@ -7,7 +7,7 @@ import { BasePage } from 'qc-kit/core';
  * **Đường vào màn này CHƯA XÁC ĐỊNH.** Màn không có field "Mật khẩu hiện tại" (AUTH5.9 nói
  * thẳng điều đó), nên nhiều khả năng nó là màn đặt lại mật khẩu đi từ link trong email —
  * tức là phải đọc được hộp thư mới tới được. Chừng nào chưa chốt, mọi case của màn này
- * `skip` với `DATA-TBD`; xem mục 2 của `docs/test-data.md`.
+ * `skip` với `DATA-TBD`; xem mục 2 của `docs/account-provisioning.md`.
  *
  * TẠM THỜI: chưa có locator thật nào — toàn bộ `LOCATOR-TBD` phải lấy từ DOM ở bước 3.
  */
@@ -38,42 +38,66 @@ const RULES = [
 ] as const;
 
 export class ChangePasswordPage extends BasePage {
-  // LOCATOR-TBD: ô "Mật khẩu mới" (AUTH5.2 step 1)
-  readonly newPassword = this.page.getByTestId('LOCATOR-TBD-change-pwd-new');
+  // Tên testid dưới đây SUY theo docs/data-testid-convention.md, module `change-pwd`
+  // (docs/test-structure.md mục 7). Dev CHƯA gắn — chúng đỏ cho tới lúc đó.
+  // Danh sách gửi Dev: docs/testid-requests/change-pwd.md
 
-  // LOCATOR-TBD: ô "Nhập lại mật khẩu" (AUTH5.4 step 2)
-  readonly confirmPassword = this.page.getByTestId('LOCATOR-TBD-change-pwd-confirm');
+  // TESTID-ĐỀ-NGHỊ: ô "Mật khẩu mới" (AUTH5.2 step 1)
+  readonly newPassword = this.page.getByTestId('change-pwd-new-password-input');
+
+  // TESTID-ĐỀ-NGHỊ: ô "Nhập lại mật khẩu" (AUTH5.4 step 2)
+  readonly confirmPassword = this.page.getByTestId('change-pwd-confirm-password-input');
 
   /**
    * LOCATOR-TBD: checklist 4 rule (AUTH5.2 step 2) — khớp NHIỀU phần tử.
    *
-   * Trạng thái đạt/chưa đạt của từng rule (dot xám → xanh + dấu check) chưa biết thể hiện
-   * bằng gì: class CSS, `aria-checked`, hay một icon riêng. Bước 3 trả lời; tới lúc đó
-   * `expectRuleStates()` mới assert được từng dòng.
+   * KHÔNG suy tên: phần tử lặp thì công thức đòi một qualifier (`-item-<index>`), mà index
+   * là dữ liệu lúc chạy chứ không phải tên. Trạng thái đạt/chưa đạt của từng rule cũng
+   * chưa biết thể hiện bằng gì: class CSS, `aria-checked`, hay một icon riêng.
    */
   readonly rules = this.page.getByTestId('LOCATOR-TBD-change-pwd-rule');
 
-  // LOCATOR-TBD: inline error dưới ô Nhập lại mật khẩu (AUTH5.4 step 2)
-  readonly confirmError = this.page.getByTestId('LOCATOR-TBD-change-pwd-confirm-error');
+  // TESTID-ĐỀ-NGHỊ: inline error dưới ô Nhập lại mật khẩu (AUTH5.4 step 2 · AUTH7.6 step 3)
+  readonly confirmError = this.page.getByTestId('change-pwd-confirm-password-error');
 
-  // LOCATOR-TBD: nút "Xác nhận", disabled tới khi đủ rule và hai ô khớp nhau (AUTH5.3)
-  readonly confirmButton = this.page.getByTestId('LOCATOR-TBD-change-pwd-submit-btn');
+  /**
+   * TESTID-ĐỀ-NGHỊ: lỗi "mật khẩu không đáp ứng chính sách" hiện SAU khi submit (AUTH7.5).
+   *
+   * Tên này kém chắc hơn ba cái trên: công thức cho MỘT `-error` trên mỗi field, mà màn
+   * này có tới ba lỗi. `policy` và `server` vì thế nằm ở ô "field/hành động" — hợp công
+   * thức, nhưng nếu DOM thật chỉ có một vùng lỗi dùng chung thì cả ba gộp làm một. Đã ghi
+   * câu hỏi đó vào docs/testid-requests/change-pwd.md để Dev chốt.
+   *
+   * MÂU THUẪN CẦN CHỐT: AUTH5.3 nói nút Xác nhận **vẫn disabled** cho tới khi đủ rule —
+   * tức không bấm được. AUTH7.5 thì bảo "Nhấn Xác nhận" rồi mới hiện lỗi. Hai hành vi loại
+   * trừ nhau, nên nhiều khả năng đây là HAI màn khác nhau chứ không phải một class dùng
+   * chung. Xem summary part 6.
+   */
+  readonly policyError = this.page.getByTestId('change-pwd-policy-error');
 
-  // LOCATOR-TBD: toast kết quả "Đổi mật khẩu thành công" (AUTH5.6 · AUTH5.7)
+  // TESTID-ĐỀ-NGHỊ: nút "Xác nhận", disabled tới khi đủ rule và hai ô khớp nhau (AUTH5.3)
+  readonly confirmButton = this.page.getByTestId('change-pwd-submit-btn');
+
+  /**
+   * LOCATOR-TBD: toast kết quả "Đổi mật khẩu thành công" (AUTH5.6 · AUTH5.7 · AUTH7.8).
+   *
+   * KHÔNG suy tên: "toast" không có trong bảng hậu tố của file quy ước. Tự đẻ `-toast`
+   * là chế thêm một loại phần tử mà Dev chưa cam kết gì.
+   */
   readonly toast = this.page.getByTestId('LOCATOR-TBD-change-pwd-toast');
 
   /**
-   * LOCATOR-TBD: inline error do SERVER trả về (AUTH5.9).
+   * TESTID-ĐỀ-NGHỊ: inline error do SERVER trả về (AUTH5.9 · AUTH7.7).
    *
    * Khác `confirmError`: cái kia là validate phía client giữa hai ô, cái này chỉ xuất
    * hiện sau khi submit — vì màn không có field "Mật khẩu hiện tại" để tự so.
    */
-  readonly serverError = this.page.getByTestId('LOCATOR-TBD-change-pwd-server-error');
+  readonly serverError = this.page.getByTestId('change-pwd-server-error');
 
   override async open(): Promise<never> {
     throw new Error(
       'Chưa biết đường vào màn Đổi mật khẩu — nhiều khả năng phải đi từ link trong email. ' +
-        'Xem mục 2 của docs/test-data.md.',
+        'Xem mục 2 của docs/account-provisioning.md.',
     );
   }
 
@@ -155,7 +179,14 @@ export class ChangePasswordPage extends BasePage {
     });
   }
 
-  /** AUTH5.9 — mật khẩu mới trùng mật khẩu hiện tại, server chặn. */
+  /** AUTH7.5 — mật khẩu mới không đạt chính sách, báo lỗi sau khi submit. */
+  async expectPolicyError(): Promise<void> {
+    await this.step('báo mật khẩu không đáp ứng chính sách', async () => {
+      await expect(this.policyError).toBeVisible();
+    });
+  }
+
+  /** AUTH5.9 · AUTH7.7 — mật khẩu mới trùng mật khẩu hiện tại, server chặn. */
   async expectMustDifferFromCurrent(): Promise<void> {
     await this.step('server báo mật khẩu mới phải khác mật khẩu hiện tại', async () => {
       await expect(this.serverError).toHaveText(VI.mustDiffer);

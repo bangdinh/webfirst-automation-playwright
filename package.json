@@ -12,7 +12,8 @@
     "codegen": "playwright codegen",
     "typecheck": "tsc --noEmit",
     "install:browsers": "playwright install --with-deps",
-    "verify": "npm run typecheck"
+    "verify": "npm run typecheck && playwright test --project=unit --reporter=list --output=test-results-unit",
+    "test:api": "playwright test --project=api"
   },
   "devDependencies": {
     "@playwright/test": ">=1.55.0",

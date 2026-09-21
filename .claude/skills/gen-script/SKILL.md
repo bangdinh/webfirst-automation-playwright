@@ -1,6 +1,6 @@
 ---
 name: gen-script
-description: Sinh test script Playwright cho bo test nay - tu MOT file JSON test case trong thu muc testcase/ cua repo ra draft script, theo luat o docs/test-structure.md va docs/test-data.md. Khi goi BAT BUOC kem ten file, vi du "/gen-script Manage_Testcase.json" - khong co ten file thi dung lai va hoi. Kich hoat khi user go "Tao script", "Gen script", "/gen-script <ten-file>.json"
+description: Sinh test script Playwright cho bo test nay - tu MOT file JSON test case trong thu muc testcase/ cua repo ra draft script, theo luat o docs/test-structure.md. Khi goi BAT BUOC kem ten file, vi du "/gen-script Manage_Testcase.json" - khong co ten file thi dung lai va hoi. Kich hoat khi user go "Tao script", "Gen script", "/gen-script <ten-file>.json"
 ---
 
 # Sinh test script — `web-automation`
@@ -16,14 +16,14 @@ Skill này do **qc-kit** phát hành. Đừng sửa tại chỗ — nó bị ghi
 |---|---|---|
 | 0 | **tên file JSON** người dùng đưa → chốt đúng một file trong `testcase/` | **cổng chặn** |
 | 1 | JSON test case → đọc, đếm case | tự động |
-| 2 | → **draft script** theo luật ở `docs/test-structure.md` + `docs/test-data.md` | tự động |
-| 3 | → **tìm locator thật**: page object có sẵn trước, DOM sau | 3a tự động · 3b **làm tay** |
+| 2 | → **draft script** theo luật ở `docs/test-structure.md`, tên testid suy theo `docs/data-testid-convention.md` nếu có | tự động |
+| 3 | → **tìm locator thật**: page object có sẵn trước, gom yêu cầu gửi Dev, DOM sau | 3a·3b tự động · 3c **làm tay** |
 | 4 | → cập nhật locator vào script, test chuyển từ đỏ sang xanh | tự động |
 | 5 | → chạy verify | tự động |
 | 6 | → **ghi file summary**: còn nợ gì, ở class nào, vì sao | tự động |
 
-Bước **3b** là chỗ duy nhất bắt buộc có người — và chỉ khi 3a không tìm thấy sẵn. Đừng cố
-nhảy qua nó bằng cách đoán; lý do ở mục dưới.
+Bước **3c** là chỗ duy nhất bắt buộc có người — và chỉ khi 3a không tìm thấy sẵn, 3b không
+suy được tên. Đừng cố nhảy qua nó bằng cách đoán; lý do ở mục dưới.
 
 ---
 
@@ -110,7 +110,7 @@ case đó và báo lại, thay vì để cả file trượt vì một case hỏn
 
 ## Bước 2 — Sinh draft script
 
-### Việc đầu tiên: đọc HAI file luật của dự án
+### Việc đầu tiên: đọc file luật của dự án
 
 Kit là khuôn dùng chung; **mỗi dự án chia thư mục một kiểu**. Đường dẫn page object,
 cách chia theo khu vực, chỗ đặt spec — kit không biết, và đoán sai thì sinh ra một cây
@@ -119,59 +119,64 @@ thư mục thứ hai nằm cạnh cây đang có.
 Nên trước khi ghi bất kỳ file nào:
 
 ```bash
-cat docs/test-structure.md docs/test-data.md
+cat docs/test-structure.md
+cat docs/data-testid-convention.md 2>/dev/null   # có thì tốt, không có vẫn chạy
 ```
 
-Hai file, hai câu hỏi, cùng một lý do tồn tại — đó là hai chỗ generator sẽ **đoán** nếu
-không ai khai:
+Mỗi file trả một câu hỏi, và mỗi câu hỏi là một chỗ generator sẽ **đoán** nếu không ai khai:
 
-| File | Trả lời | Đoán sai thì |
-|---|---|---|
-| `test-structure.md` | thư mục chia thế nào, màn nào ứng với class nào | sinh ra một cây thư mục thứ hai nằm cạnh cây đang có |
-| `test-data.md` | có sẵn trạng thái dữ liệu nào, lấy ở đâu, reset ra sao | tự bịa tên biến `.env` cho một tài khoản chưa ai cấp |
+| File | Trả lời | Đoán sai thì | Thiếu thì |
+|---|---|---|---|
+| `test-structure.md` | thư mục chia thế nào, màn nào ứng với class nào | sinh ra một cây thư mục thứ hai nằm cạnh cây đang có | **dừng** |
+| `data-testid-convention.md` | Dev đặt tên `data-testid` theo công thức nào | đặt tên không ai gắn, mà lại trông như tên thật | **chạy tiếp**, mất khả năng suy tên |
+
+File thứ hai khác file đầu ở chỗ **thiếu nó không phải lỗi**: không có công thức thì mọi
+locator về `LOCATOR-TBD` như cũ, không hỏng gì. File đầu thiếu là dừng, vì đoán sai chỗ
+chia thư mục đẻ ra một cây thứ hai nằm cạnh cây đang có.
 
 | Tình huống | Xử lý |
 |---|---|
-| Có cả hai file, đã điền | Theo chúng. Chúng thắng mọi ví dụ trong skill này |
-| **Thiếu một trong hai** | **Dừng.** Bảo người dùng `cp docs/<tên>.example.md docs/<tên>.md` rồi điền. Đừng đoán, đừng tự tạo file hộ |
+| Có `test-structure.md`, đã điền | Theo nó. Nó thắng mọi ví dụ trong skill này |
+| **Thiếu `test-structure.md`** | **Dừng.** Bảo người dùng `cp docs/test-structure.example.md docs/test-structure.md` rồi điền. Đừng đoán, đừng tự tạo file hộ |
 | File có nhưng **còn nguyên như bản mẫu** | Cũng dừng. File rỗng nghĩa còn tệ hơn không có: nó trông như đã có luật |
 | Màn hình của case **không có trong bảng ánh xạ** (`test-structure.md` mục 4) | Hỏi người, không tự tạo thư mục mới |
-| Case cần một **profile dữ liệu chưa khai** trong `test-data.md` | `DATA-TBD` + `test.skip(...)` — xem mục dưới |
+| Case cần một **trạng thái dữ liệu** mà bộ test không tự tạo được | `DATA-TBD` + `test.skip(...)` — xem mục dưới |
+| **Không có** `data-testid-convention.md` | Chạy tiếp, mọi locator là `LOCATOR-TBD`. Nhắc một câu ở summary rằng có file này thì suy được tên |
 
 Mọi đường dẫn (`src/pages/…`, `tests/ui/…`) và mọi tên biến `.env` trong skill này chỉ là
-**ví dụ minh hoạ**, không phải luật. Luật nằm ở hai file trên của dự án.
+**ví dụ minh hoạ**, không phải luật. Luật nằm ở các file trên của dự án.
 
 ### Trạng thái dữ liệu — bốn luật
 
 Phần lớn case không-phải-happy-path kiểm một TRẠNG THÁI mà bộ test không tự tạo được: tài
 khoản bị khoá, gói đã hết hạn, đơn đã huỷ, người dùng chưa có quyền. `preconditions` và
-`expected` nói ra trạng thái đó; `docs/test-data.md` nói nó có sẵn hay chưa.
+`expected` nói ra trạng thái đó; **`.env.example` của dự án** nói nó đã được khai hay chưa.
 
-**1. Đọc profile, đừng đặt tên biến.**
-Case cần trạng thái nào thì tra bảng profile ở mục 1 của `test-data.md` và dùng đúng key
-nó khai. **Không bao giờ tự nghĩ ra một tên biến `.env`** — biến bạn bịa sẽ không ai cấp,
-case sẽ `skip` vĩnh viễn, và người đọc summary không biết cái tên đó từ đâu ra.
+**1. Đọc key đã khai, đừng đặt tên mới.**
+Case cần trạng thái nào thì tìm key tương ứng trong `.env.example` và dùng đúng tên đó.
+**Không bao giờ tự nghĩ ra một tên biến `.env`** — biến bạn bịa sẽ không ai cấp, case sẽ
+`skip` vĩnh viễn, và người đọc summary không biết cái tên đó từ đâu ra.
 
 **2. Chưa khai thì dừng case đó, không dừng cả file.**
 
 ```ts
-// DATA-TBD: cần tài khoản ở trạng thái "đã khoá" — chưa có profile nào trong
-// docs/test-data.md. Case vẫn BẬT; `test.skip` bên dưới chặn nó khi chưa có dữ liệu, nên
+// DATA-TBD: cần tài khoản ở trạng thái "đã khoá" — chưa có key nào cho nó trong
+// .env.example. Case vẫn BẬT; `test.skip` bên dưới chặn nó khi chưa có dữ liệu, nên
 // nó hiện ra là "skipped" kèm lý do chứ không đỏ bừa.
 test('TB2.9 tài khoản bị khoá thì báo lỗi @high', async ({ createPage }) => {
-  test.skip(true, 'DATA-TBD: chưa có profile "locked" trong docs/test-data.md');
+  test.skip(true, 'DATA-TBD: chưa có key nào cho trạng thái "locked" trong .env.example');
 ```
 
-**3. Profile đánh dấu PHÁ HUỶ kéo theo hai nghĩa vụ.**
-Test làm đổi trạng thái của chính dữ liệu nó dùng thì:
+**3. Tài khoản bị test LÀM ĐỔI trạng thái kéo theo hai nghĩa vụ.**
+Test đổi mật khẩu, khoá tài khoản, tiêu hạn mức — tức làm đổi chính dữ liệu nó dùng — thì:
 
-- Mọi case dùng chung profile đó gói trong một `describe` chạy **`serial`** — chạy song
+- Mọi case dùng chung tài khoản đó gói trong một `describe` chạy **`serial`** — chạy song
   song thì chúng dẫm lên trạng thái của nhau và không case nào còn đúng.
-- Chép **cột "reset bằng"** của profile vào summary. Không có nó, người chạy lần hai thấy
-  test đỏ mà không biết đỏ vì môi trường hay vì sản phẩm.
+- Ghi **cách reset** vào summary. Không có nó, người chạy lần hai thấy test đỏ mà không
+  biết đỏ vì môi trường hay vì sản phẩm.
 
-**4. Kênh ngoài chưa khai thì không sinh.**
-Case cần đọc hộp thư, sinh mã TOTP, nhận SMS — nếu mục 2 của `test-data.md` chưa khai kênh
+**4. Kênh ngoài chưa có thì không sinh.**
+Case cần đọc hộp thư, sinh mã TOTP, nhận SMS — nếu dự án chưa có helper nào đọc được kênh
 đó thì đánh `DATA-TBD` và dừng. Sinh một test không có đường lấy dữ liệu là sinh một test
 không bao giờ chạy được, mà lại trông như đã xong.
 
@@ -209,6 +214,47 @@ Ba tính chất của marker, cả ba đều cố ý:
 | **Grep được** | `grep -rn "LOCATOR-TBD" src/ tests/` ra đúng danh sách việc còn lại |
 | **Fail to** | selector không khớp gì; test đỏ với thông báo chứa `LOCATOR-TBD`, không đỏ mơ hồ |
 | **Truy được nguồn** | comment ghi rõ case nào, step nào cần nó |
+
+### Có file quy ước testid thì SUY tên, đừng để trống
+
+Luật số một cấm suy locator từ JSON, và nó vẫn đúng. Nhưng một file quy ước `data-testid`
+**không phải** mô tả những id đang có — nó là công thức Dev cam kết sẽ gắn. Đặt tên theo
+công thức vì thế không phải đoán: đó là **soạn yêu cầu**.
+
+Ba mảnh ghép lại thành một tên, và không mảnh nào được bịa:
+
+| Mảnh | Lấy ở đâu | Không có thì |
+|---|---|---|
+| `<module>` | cột `Module` trong bảng khai của `test-structure.md` | **không suy** — `LOCATOR-TBD` |
+| `<field/hành động>` | tên field bạn vừa đặt theo `description` (kebab-case hoá) | — |
+| `<loại phần tử>` | bảng hậu tố trong file quy ước, tra theo **lời gọi vừa chọn** ở mục "Ánh xạ step sang code" | **không suy** — `LOCATOR-TBD` |
+
+Hậu tố không phải nghĩ thêm lần nữa: bạn đã quyết `fill()` hay `click()` rồi, chính quyết
+định đó tra ra loại phần tử. **Bảng tra đọc từ file quy ước của dự án, không hardcode ở
+đây** — dự án khác có thể dùng `-button` thay vì `-btn`.
+
+Tên suy ra ghi thẳng vào locator, kèm marker riêng:
+
+```ts
+// TESTID-ĐỀ-NGHỊ: nút "Xác nhận" (TB1.0 step 3) — suy theo công thức, Dev chưa gắn.
+// Danh sách gửi Dev: docs/testid-requests/<module>.md
+readonly xacNhan = this.page.getByTestId('stock-confirm-btn');
+```
+
+**Tên suy ra vẫn CHƯA được xác minh.** Nó đỏ cho tới khi Dev gắn thật — đúng tính chất
+*fail to* của `LOCATOR-TBD`, chỉ khác là lần này thông báo lỗi chứa **tên mà Dev sắp
+gắn**, nên nó vừa là lỗi vừa là yêu cầu. Không bao giờ coi nó như đã xác minh.
+
+#### Bốn ca CẤM suy — để `LOCATOR-TBD` như cũ
+
+1. **Phần tử lặp cần qualifier** (dòng bảng, item danh sách, ô OTP thứ n). Index và id
+   thật là dữ liệu lúc chạy, không phải tên.
+2. **Loại phần tử không có trong bảng hậu tố** (toast, ảnh QR, banner, chỉ báo bước).
+   Bảng không phủ thì đừng tự đẻ hậu tố mới — đó mới đúng là bịa.
+3. **Màn hình nằm ngoài codebase của Dev** (trang IdP/SSO, cổng thanh toán). Dev không
+   sửa được file họ không sở hữu.
+4. **Màn hình chưa có `<module>`** trong bảng khai. Đẻ tên module mới là quyết định của
+   người, không phải của generator.
 
 ### Page object
 
@@ -382,8 +428,8 @@ không chặn cả file.
 | `source: "inferred"` | Không đưa vào bộ chạy. Giả định chưa ai xác nhận — luật ở `testcase-standard` |
 | `description` không đọc ra hành động nào | Mơ hồ, mô tả trạng thái, hoặc hai việc trong một dòng → bỏ case, trích nguyên văn câu đó |
 | Không biết case thuộc màn hình nào | **Không tạo page object mới**, hỏi người |
-| Case cần một **profile dữ liệu chưa khai** trong `docs/test-data.md` | `DATA-TBD` + `test.skip(true, ...)`, case vẫn bật, ghi profile còn thiếu vào summary. **Không tự đặt tên biến `.env`** |
-| Case cần **kênh ngoài** (hộp thư · TOTP · SMS) chưa khai ở mục 2 của `test-data.md` | `DATA-TBD` + `test.skip(true, ...)` — không có đường lấy dữ liệu thì test chưa chạy được, nhưng vẫn nằm trong danh sách |
+| Case cần một **trạng thái dữ liệu chưa có key** trong `.env.example` | `DATA-TBD` + `test.skip(true, ...)`, case vẫn bật, ghi thứ còn thiếu vào summary. **Không tự đặt tên biến `.env`** |
+| Case cần **kênh ngoài** (hộp thư · TOTP · SMS) mà dự án chưa đọc được | `DATA-TBD` + `test.skip(true, ...)` — không có đường lấy dữ liệu thì test chưa chạy được, nhưng vẫn nằm trong danh sách |
 | `steps` rỗng | Không có gì để sinh, bỏ qua và báo lại |
 | `expected` của step cuối rỗng | Case không khẳng định điều gì → bỏ qua và báo lại |
 | `expected` kiểu "Theo design", "Đúng UI" | Kiểm thị giác, không phải assertion chức năng → `test.fixme` |
@@ -432,7 +478,30 @@ khai cả hai thì hôm Dev đổi UI sẽ sửa một cái và quên cái kia. 
 Dùng lại được thì ghi rõ trong báo cáo: locator nào lấy từ class có sẵn, locator nào phải
 đi lấy mới. Đó là thước đo page object đang lớn lên hay đang bị chép lại.
 
-### 3b. Chưa có thì mở app thật — làm tay
+### 3b. Gom tên đã suy thành yêu cầu gửi Dev
+
+Mọi `TESTID-ĐỀ-NGHỊ` vừa sinh đều là một dòng Dev phải gắn. Chúng nằm rải trong page
+object thì không ai gửi đi được, nên gom lại: **một file cho mỗi module**, ghi đè file cũ
+của đúng module đó.
+
+```
+docs/testid-requests/<module>.md
+```
+
+Nội dung theo **đúng khuôn mà file quy ước của dự án đã soạn sẵn để dán cho AI của Dev**
+— đừng chế khuôn mới. Phần danh sách điền từ những gì vừa suy, mỗi dòng truy được về case:
+
+```
+- Ô "Mật khẩu hiện tại"        → pwd-expired-current-password-input   (TB7.3 step 2)
+- Nút "Xác nhận"               → pwd-expired-submit-btn               (TB7.3 step 3)
+- Lỗi "xác thực không hợp lệ"  → pwd-expired-auth-error               (TB7.4 expected)
+```
+
+File quy ước thường kết bằng một câu yêu cầu Dev **liệt kê lại những id đã gắn**. Đó là
+bước đối chiếu: Dev trả lời tên khác thì sửa theo tên của Dev — id là hợp đồng, và bên
+gắn nó mới là bên chốt.
+
+### 3c. Còn lại thì mở app thật — làm tay
 Quan trọng: skip bước này
 
 Chưa có giải pháp tự động cho phần này.
@@ -458,7 +527,7 @@ Sau một lượt sinh, mỗi case rơi vào một trong bốn trạng thái:
 | Trạng thái | Nghĩa là | Trong report |
 |---|---|---|
 | **xanh** | đủ locator, đủ dữ liệu | passed |
-| **đỏ — chờ locator** | có code, `LOCATOR-TBD` chưa lấy xong | failed, thông báo chứa `LOCATOR-TBD` |
+| **đỏ — chờ locator** | có code, nhưng locator còn là `TESTID-ĐỀ-NGHỊ` (Dev chưa gắn) hoặc `LOCATOR-TBD` (chưa suy được) | failed, thông báo chứa đúng chuỗi đó |
 | **skip — chờ dữ liệu** | có code, `DATA-TBD` hoặc thiếu key `.env` | skipped, kèm lý do |
 | **bỏ** | không sinh dòng nào | không có trong report |
 
@@ -492,21 +561,28 @@ Nguồn `testcase/Manage_Testcase.json` · 8 case · sinh 6, bỏ 2 · typecheck
 | TB1.0 | đỏ — chờ locator | `StockPage.heading` · `StockPage.appDownload` |
 | TB1.4 | bỏ | step 2 "Xác thực qua IdP" không đọc ra hành động |
 
+## Việc còn nợ — testid đã đề nghị, chờ Dev gắn
+
+| Class | Field | `data-testid` đề nghị | Case cần |
+|---|---|---|---|
+| `StockPage` | `heading` | `stock-page-heading` | TB1.0 |
+
+Đã gom vào `docs/testid-requests/stock.md` — gửi file đó cho Dev.
+
 ## Việc còn nợ — locator phải lấy từ DOM
 
 | Class | Field | Phần tử cần tìm | Case cần |
 |---|---|---|---|
-| `StockPage` | `heading` | tiêu đề "Kho hàng" | TB1.0 |
-| `StockPage` | `appDownload` | 3 nút tải app ở footer | TB1.0 |
+| `StockPage` | `appDownload` | 3 nút tải app ở footer — phần tử lặp, không suy tên được | TB1.0 |
 
 ## Việc còn nợ — dữ liệu
 
 | Profile cần | Trạng thái | Case cần | Ghi chú |
 |---|---|---|---|
-| `locked` | tài khoản đã bị khoá | TB2.9 | chưa khai trong `docs/test-data.md` |
+| `locked` | tài khoản đã bị khoá | TB2.9 | chưa có key nào trong `.env.example` |
 | `mailbox` | hộp thư có API | TB3.3 | kênh ngoài, chưa chốt công cụ |
 
-Profile PHÁ HUỶ đã dùng thì chép luôn cột "reset bằng" vào đây — người chạy lần hai cần nó.
+Tài khoản bị test làm đổi trạng thái thì ghi luôn cách reset vào đây — người chạy lần hai cần nó.
 
 ## Cần người quyết
 
@@ -549,9 +625,13 @@ Ghi xong thì nói ra đường dẫn file. Đó là dòng cuối của một l�
   thái mất khi đóng chat — xem bước 6.
 - **Tự đặt tên biến `.env` cho một trạng thái dữ liệu chưa ai khai.** Biến bịa thì không
   ai cấp, case `skip` vĩnh viễn, và cái tên đó không truy được về đâu. Dùng đúng key mà
-  `docs/test-data.md` khai, hoặc đánh `DATA-TBD` — xem bước 2.
-- **Cho case dùng profile PHÁ HUỶ chạy song song.** Chúng dẫm lên trạng thái của nhau;
+  `.env.example` khai, hoặc đánh `DATA-TBD` — xem bước 2.
+- **Cho case dùng chung một tài khoản bị làm đổi trạng thái chạy song song.** Chúng dẫm lên nhau;
   gói trong một `describe` chạy `serial`.
+- **Coi một tên suy theo công thức là đã xác minh.** Dev chưa gắn thì phần tử đó chưa tồn
+  tại; `TESTID-ĐỀ-NGHỊ` phải đỏ cho tới khi có người gắn hoặc có người đối chiếu DOM.
+- **Suy tên testid khi chưa khai `<module>`**, hoặc cho phần tử lặp, hoặc cho loại phần tử
+  không có trong bảng hậu tố. Bốn ca đó để `LOCATOR-TBD` — xem bước 2.
 
 ## Không thuộc skill này
 
@@ -562,4 +642,6 @@ Ghi xong thì nói ra đường dẫn file. Đó là dòng cuối của một l�
 | Nghĩ ra case mới | `platform-qc-agent` — **không phải** ở đây |
 | Base class, fixture, helper dùng được cho **mọi** sản phẩm | **qc-kit** — đề xuất ở đó, nâng version |
 | Sửa `.claude/skills/*` | **qc-kit** — bản ở đây là bản sao |
+| Quyết công thức đặt tên `data-testid` | `docs/data-testid-convention.md` — **dự án** sở hữu, là hợp đồng với Dev của họ |
 | Quyết dự án chia thư mục kiểu gì | `docs/test-structure.md` — **dự án** sở hữu, kit chỉ phát hành bản mẫu |
+| Quyết tài khoản/dữ liệu nào có sẵn | `.env.example` của dự án — kit không biết sản phẩm nào cần gì |

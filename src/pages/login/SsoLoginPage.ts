@@ -16,8 +16,26 @@ import { ForgotPasswordPage } from './ForgotPasswordPage';
  *    đặt, nên nâng cấp theme là có thể mất.
  */
 
-/** Realm và client do app chọn theo mã doanh nghiệp; chỉ khớp phần ổn định của URL. */
-export const SSO_URL = /\/realms\/[^/]+\/protocol\/openid-connect\/auth/;
+/**
+ * Màn đăng nhập của Keycloak sống ở **HAI URL khác nhau**, cùng một giao diện:
+ *
+ *   /realms/<realm>/protocol/openid-connect/auth      ← lối vào, app redirect sang
+ *   /realms/<realm>/login-actions/authenticate        ← sau một lần POST form, hoặc khi
+ *                                                       quay lại từ màn Quên mật khẩu
+ *
+ * Bắt được cái này từ lượt chạy thật của AUTH3.5: bấm "Quay lại" ở màn Quên mật khẩu thì
+ * form đăng nhập hiện lại đúng như mong đợi, nhưng URL là `login-actions/authenticate` —
+ * regex cũ chỉ biết URL thứ nhất nên báo đỏ cho một màn hình hoàn toàn đúng.
+ *
+ * Cố ý KHÔNG nới thành `/realms/<realm>/` cho gọn: `login-actions/reset-credentials` là
+ * màn QUÊN MẬT KHẨU, cũng nằm dưới `/realms/` — nới rộng là hai màn khác nhau cùng khớp,
+ * và AUTH3.5 sẽ xanh kể cả khi nút "Quay lại" không đi đâu cả.
+ *
+ * Realm và client do app chọn theo mã doanh nghiệp; chỉ khớp phần ổn định của URL. Không
+ * neo `^`/`$` vì query mang `state`, `nonce`, `code_challenge` sinh mới mỗi lần.
+ */
+export const SSO_URL =
+  /\/realms\/[^/]+\/(protocol\/openid-connect\/auth|login-actions\/authenticate)/;
 
 /**
  * Nhãn hiển thị.
@@ -44,7 +62,16 @@ const VI = {
 const BANNER = {
   attemptsLeft: /Bạn còn\s+\d+\s+lần thử/i,
   locked: /bị kh[oó]a do đăng nhập sai quá\s+\d+\s+lần/i,
-  expired: /đã hết hạn/i,
+  /**
+   * DOM thật trả "Tài khoản đã bị vô hiệu hóa, liên hệ quản trị viên." cho tài khoản
+   * `EXPIRED_USERNAME`. File test case thì nói "đã hết hạn".
+   *
+   * Khớp theo DOM vì đó là luật của repo. Nhưng CẦN BA CHỐT: hoặc tài khoản được cấp ở
+   * trạng thái Disabled chứ không phải Expired, hoặc sản phẩm dùng chung một câu cho cả
+   * hai trạng thái — và nếu là vế sau thì AUTH2.12 (Disabled, part sau) không phân biệt
+   * được với case này.
+   */
+  expired: /vô hiệu hóa|hết hạn/i,
 } as const;
 
 export class SsoLoginPage extends BasePage {
@@ -106,10 +133,29 @@ export class SsoLoginPage extends BasePage {
    * trạng thái của TÀI KHOẢN (còn mấy lần thử, đang bị khoá, đã hết hạn) chứ không phải
    * lỗi của một field.
    */
-  readonly alertBanner = this.page.getByTestId('LOCATOR-TBD-sso-login-alert-banner');
+  /**
+   * Dải thông báo trạng thái tài khoản. `role=alert` — tầng ① của thang locator, không
+   * phụ thuộc text lẫn testid.
+   *
+   * Lấy từ DOM thật (snapshot lỗi AUTH2.13):
+   *
+   *   - alert:
+   *     - paragraph: Tài khoản đã bị vô hiệu hóa, liên hệ quản trị viên.
+   *     - button "Đóng thông báo"
+   *
+   * Nó KHÔNG xuất hiện khi chỉ sai mật khẩu (snapshot AUTH2.7 không có `alert` nào) —
+   * lúc đó chỉ có một dòng lỗi chung dưới ô Mật khẩu.
+   */
+  readonly alertBanner = this.page.getByRole('alert');
 
-  // LOCATOR-TBD: nút "Liên hệ hỗ trợ" nằm TRONG banner (AUTH2.13 step 2)
-  readonly supportButton = this.page.getByTestId('LOCATOR-TBD-sso-login-support-btn');
+  /**
+   * Nút DUY NHẤT trong banner, và nó là nút ĐÓNG chứ không phải "Liên hệ hỗ trợ".
+   *
+   * AUTH2.13 mong có một lối liên hệ bấm được; DOM thật chỉ có chữ "liên hệ quản trị
+   * viên" nằm trong câu thông báo. Không phải locator sai — sản phẩm không có nút đó.
+   * Câu hỏi cho BA, đã ghi ở docs/testid-requests/sso-login.md.
+   */
+  readonly closeBannerButton = this.alertBanner.getByRole('button');
 
   override async open(): Promise<never> {
     throw new Error(
@@ -244,9 +290,16 @@ export class SsoLoginPage extends BasePage {
    * `LoginPage.expectWrongCompany()` đang làm. Màu viền là CSS, assert nó vừa giòn vừa
    * không nói lên điều gì; `aria-invalid` mới vừa kiểm được vừa đúng nghĩa.
    */
+  /**
+   * Snapshot AUTH2.7 cho thấy sản phẩm chỉ hiện MỘT dòng lỗi, nằm dưới ô Mật khẩu; đoạn
+   * dưới ô Tài khoản render rỗng. Assert cả hai là đòi một thứ không tồn tại — đó là lý do
+   * AUTH2.15 đỏ với `Received: " "`.
+   *
+   * Hai ô vẫn cùng mang `aria-invalid="true"`, nên vế "cả hai field bị đánh dấu sai" vẫn
+   * kiểm được — chỉ là kiểm bằng thuộc tính chứ không bằng hai dòng chữ.
+   */
   async expectInvalidCredentials(): Promise<void> {
-    await this.step('cả hai field báo sai thông tin đăng nhập', async () => {
-      await expect(this.usernameError).toHaveText(VI.invalidCredentials);
+    await this.step('báo sai thông tin đăng nhập, cả hai ô bị đánh dấu', async () => {
       await expect(this.credentialError).toHaveText(VI.invalidCredentials);
       await expect(this.username).toHaveAttribute('aria-invalid', 'true');
       await expect(this.password).toHaveAttribute('aria-invalid', 'true');
@@ -295,9 +348,10 @@ export class SsoLoginPage extends BasePage {
 
   /** AUTH2.13 — tài khoản hết hạn, banner kèm lối thoát cho người dùng. */
   async expectAccountExpired(): Promise<void> {
-    await this.step('banner báo tài khoản hết hạn, có nút liên hệ hỗ trợ', async () => {
+    await this.step('banner báo tài khoản không dùng được', async () => {
       await expect(this.alertBanner).toHaveText(BANNER.expired);
-      await expect(this.supportButton).toBeVisible();
+      // Vế "mở lối liên hệ hỗ trợ" của AUTH2.13 KHÔNG assert được: banner chỉ có nút đóng,
+      // lối liên hệ là chữ trong câu thông báo. Xem JSDoc của `closeBannerButton`.
     });
   }
 

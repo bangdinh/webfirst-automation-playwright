@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test';
+import { expect, type Locator } from '@playwright/test';
 import { BasePage } from 'qc-kit/core';
 
 /**
@@ -16,24 +16,42 @@ import { BasePage } from 'qc-kit/core';
  */
 export class TwoFactorSetupPage extends BasePage {
   // LOCATOR-TBD: ảnh mã QR (AUTH4.0 step 2)
-  readonly qrCode = this.page.getByTestId('LOCATOR-TBD-2fa-setup-qr');
+  readonly qrCode = this.page.getByTestId('LOCATOR-TBD-sso-otp-qr');
 
   /**
    * LOCATOR-TBD: 3 bước hướng dẫn — "Tải app Authenticator" → "Quét mã QR" → "Nhập mã
    * 6 số" (AUTH4.0 step 2). Là một locator khớp NHIỀU phần tử, assert bằng `toHaveCount`.
    */
-  readonly steps = this.page.getByTestId('LOCATOR-TBD-2fa-setup-step');
+  readonly steps = this.page.getByTestId('LOCATOR-TBD-sso-otp-step');
 
-  // LOCATOR-TBD: 6 ô nhập OTP (AUTH4.0 step 2) — cũng là locator khớp nhiều phần tử
-  readonly otpInputs = this.page.getByTestId('LOCATOR-TBD-2fa-setup-otp-input');
+  /**
+   * 6 ô nhập OTP. `data-testid` mang index ở cuối — `sso-otp-otp-input-0` … `-5` — đúng
+   * quy ước "phần tử lặp luôn có index ở cuối" của docs/data-testid-convention.md.
+   *
+   * Phải là REGEX: `getByTestId('sso-otp-otp-input')` so khớp CHÍNH XÁC, nên nó khớp 0 phần
+   * tử chứ không phải 6. Đây là kiểu lỗi im lặng — `toHaveCount(6)` đỏ nhưng thông báo chỉ
+   * nói "expected 6, got 0", không nói vì sao.
+   */
+  readonly otpInputs = this.page.getByTestId(/^sso-otp-otp-input-\d$/);
+
+  /**
+   * Ô OTP thứ `i` (0-based), địa chỉ thẳng bằng chính id của nó.
+   *
+   * Dùng cái này thay `otpInputs.nth(i)`: `nth` đi theo thứ tự DOM, mà thứ tự DOM chỉ TÌNH
+   * CỜ trùng với index trong id. Dev đảo hai ô trong markup là `nth(0)` trỏ sang ô số 2 mà
+   * không test nào đỏ.
+   */
+  otpInput(i: number): Locator {
+    return this.page.getByTestId(`sso-otp-otp-input-${i}`);
+  }
 
   // LOCATOR-TBD: nút "Xác nhận", disabled khi chưa nhập đủ 6 số (AUTH4.0 step 2)
-  readonly confirmButton = this.page.getByTestId('LOCATOR-TBD-2fa-setup-confirm-btn');
+  readonly confirmButton = this.page.getByTestId('sso-otp-submit-btn');
 
   override async open(): Promise<never> {
     throw new Error(
       'Không mở thẳng màn setup 2FA: nó nằm giữa luồng đăng nhập, sau khi credentials đã ' +
-        'đúng. Đi qua LoginPage/SsoLoginPage để tới đây.',
+      'đúng. Đi qua LoginPage/SsoLoginPage để tới đây.',
     );
   }
 
@@ -46,13 +64,13 @@ export class TwoFactorSetupPage extends BasePage {
    *
    * Step 1 của case là "quét mã QR bằng app Authenticator" — không phải thao tác UI và
    * không tự động được. Bản tự động thay nó bằng: sinh mã từ TOTP secret đã cấp lúc tạo
-   * tài khoản. Chưa có secret thì case `skip`, xem mục 2 của `docs/test-data.md`.
+   * tài khoản. Chưa có secret thì case `skip`, xem mục 2 của `docs/account-provisioning.md`.
    */
   async nhapOtp(ma: string): Promise<void> {
     await this.step(`nhập mã OTP "${ma}" để bật 2FA`, async () => {
       const so = ma.split('');
       for (let i = 0; i < so.length; i += 1) {
-        await this.otpInputs.nth(i).fill(so[i]);
+        await this.otpInput(i).fill(so[i]);
       }
       await this.clickWhenReady(this.confirmButton);
     });
@@ -66,10 +84,20 @@ export class TwoFactorSetupPage extends BasePage {
    * Authenticator thật.
    */
   async expectDefaultLayout(): Promise<void> {
-    await this.step('màn Setup 2FA hiển thị QR, 3 bước hướng dẫn, 6 ô OTP', async () => {
-      await expect(this.qrCode).toBeVisible();
-      await expect(this.steps).toHaveCount(3);
+    await this.step('màn Setup 2FA hiển thị đủ 6 ô OTP, nút Xác nhận còn khoá', async () => {
       await expect(this.otpInputs).toHaveCount(6);
+
+      // Đếm được 6 KHÔNG có nghĩa là có đủ ô 0…5: markup đánh số nhảy cóc (0,1,2,3,4,7)
+      // vẫn cho ra 6 phần tử và `toHaveCount` vẫn xanh. Index trong testid là hợp đồng với
+      // Dev, nên kiểm từng id một — và thông báo lỗi chỉ thẳng ô nào thiếu.
+      for (let i = 0; i < 6; i += 1) {
+        const o = this.otpInput(i);
+        await expect(o, `thiếu ô OTP thứ ${i + 1} (sso-otp-otp-input-${i})`).toBeEditable();
+        await expect(o, `ô OTP thứ ${i + 1} phải trống khi màn vừa mở`).toHaveValue('');
+      }
+
+      // Nút khoá khi chưa nhập đủ: thứ chặn người dùng gửi một mã dở dang, và cũng là thứ
+      // duy nhất ở màn này quan sát được mà không cần app Authenticator thật.
       await expect(this.confirmButton).toBeDisabled();
     });
   }

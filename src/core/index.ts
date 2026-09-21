@@ -8,3 +8,4 @@
 export * from './auth';
 export * from './paths';
 export * from './session';
+export * from './session-token';
