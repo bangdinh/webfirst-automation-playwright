@@ -68,14 +68,14 @@ const GIOI_HAN_YEU_CAU = 3;
  * `CHO_HOP_THU` — case phải đọc một email/OTP mới đi tiếp được. Mạng công ty chặn đường
  * đọc Gmail (`imap.gmail.com:993`, `gmail.googleapis.com:443`, `oauth2.googleapis.com:443`
  * đều trả chứng chỉ chặn `invalid2.invalid`), nên không có cấu hình nào lách được. Mở lại
- * khi chốt được một trong ba đường ở docs/test-data.md mục 2.
+ * khi chốt được một trong ba đường ở docs/account-provisioning.md.
  *
  * `DOT_QUOTA` — case CHẠY ĐƯỢC, nhưng mỗi lượt gửi một email THẬT và đốt một suất trong
  * 3 lần/NGÀY của tài khoản. Để trong bộ chạy thường là hết quota trước khi ai kịp dùng tới.
  * Bỏ skip khi cần chạy tay.
  */
 const CHO_HOP_THU =
-  'CHẶN: cần đọc email/OTP, mà mạng chặn đường đọc hộp thư — xem docs/test-data.md mục 2';
+  'CHẶN: cần đọc email/OTP, mà mạng chặn đường đọc hộp thư — xem docs/account-provisioning.md';
 const DOT_QUOTA =
   'CHẶN: mỗi lượt gửi email THẬT, đốt hạn mức 3 lần/ngày — bỏ skip khi chạy tay';
 
@@ -444,7 +444,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       // CẦN .env: FORGOT_USERNAME
       //
       // TỐN HẠN MỨC: mỗi lần chạy gửi một EMAIL THẬT và đốt một suất trong 3 lần/NGÀY của
-      // tài khoản này (docs/test-data.md mục 1). Chạy lặp để dò lỗi là hết quota trước khi
+      // tài khoản này (docs/account-provisioning.md). Chạy lặp để dò lỗi là hết quota trước khi
       // kịp xanh — AUTH3.9 cũng dùng chung hạn mức đó.
       const login = createPage(LoginPage);
       const forgot = await moManQuenMatKhau(login);
@@ -456,7 +456,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       await forgot.expectRequestSucceeded();
 
       // Vế "gửi email chứa link reset (token one-time, có TTL)" KHÔNG kiểm được: đọc hộp thư
-      // không khả thi trên mạng này — xem mục 2 của docs/test-data.md.
+      // không khả thi trên mạng này — xem mục 2 của docs/account-provisioning.md.
     });
 
     test('AUTH3.4 server lỗi thì báo gửi thất bại @high', async ({ createPage, page }) => {
@@ -550,7 +550,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
       page,
     }) => {
-      // DATA-TBD: cần sinh mã TOTP từ secret — mục 2 của docs/test-data.md khai kênh này nhưng chưa có secret lẫn thư viện sinh mã
+      // DATA-TBD: cần sinh mã TOTP từ secret — docs/account-provisioning.md khai kênh này nhưng chưa có secret lẫn thư viện sinh mã
       const login = createPage(LoginPage);
       const sso = await moManDangNhap(login);
       await sso.trySignIn(
@@ -612,7 +612,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
     });
 
     test('AUTH4.6 nhập đúng mã OTP thì vào được app @high', async ({ createPage, page }) => {
-      // DATA-TBD: cần sinh mã TOTP từ secret — mục 2 của docs/test-data.md khai kênh này nhưng chưa có secret lẫn thư viện sinh mã
+      // DATA-TBD: cần sinh mã TOTP từ secret — docs/account-provisioning.md khai kênh này nhưng chưa có secret lẫn thư viện sinh mã
       await moManNhapOtp(createPage);
       const otp = createPage(OtpVerificationPage);
 
@@ -631,7 +631,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
      * Cả ba case `skip` vì cùng một lý do: **chưa chốt đường vào màn này**.
      *
      * Màn không có field "Mật khẩu hiện tại" (AUTH5.9 nói thẳng), nên nhiều khả năng nó đi
-     * từ link trong email — mà hộp thư thì mục 2 của `docs/test-data.md` còn ghi "chưa chốt
+     * từ link trong email — mà hộp thư thì mục "Nhóm 2" của `docs/account-provisioning.md` còn ghi "chưa chốt
      * công cụ". Chốt xong thì thêm bước điều hướng vào chỗ đã đánh dấu bên dưới.
      */
 
@@ -639,7 +639,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
     }) => {
       test.skip(true, CHO_HOP_THU);
-      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
+      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/account-provisioning.md
       const doiMatKhau = createPage(ChangePasswordPage);
       // DATA-TBD: chỗ này thiếu bước đi tới màn Đổi mật khẩu.
 
@@ -654,7 +654,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
     }) => {
       test.skip(true, CHO_HOP_THU);
-      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
+      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/account-provisioning.md
       const doiMatKhau = createPage(ChangePasswordPage);
 
       // step 1 — "Nhập giá trị chỉ đạt 1-2/4 rule hiển thị."
@@ -668,7 +668,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
 
     test('AUTH5.4 nhập lại mật khẩu không khớp thì báo lỗi @high', async ({ createPage }) => {
       test.skip(true, CHO_HOP_THU);
-      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
+      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/account-provisioning.md
       const doiMatKhau = createPage(ChangePasswordPage);
 
       // step 1 — "Nhập \"Mật khẩu mới\" hợp lệ."
@@ -684,7 +684,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
     }) => {
       test.skip(true, CHO_HOP_THU);
-      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
+      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/account-provisioning.md
       const doiMatKhau = createPage(ChangePasswordPage);
       const matKhau = matKhauHopLe();
 
@@ -705,7 +705,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
      * cùng tài khoản là đá nhau.
      *
      * Reset sau mỗi lần chạy: đặt lại mật khẩu về giá trị trong `.env`
-     * (`CHANGE_PWD_PASSWORD`, `OTP_PASSWORD`). Xem `docs/test-data.md` mục 1.
+     * (`CHANGE_PWD_PASSWORD`, `OTP_PASSWORD`). Xem `docs/account-provisioning.md`.
      */
     test.describe('AUTH5.6–5.7 — submit đổi mật khẩu thật', () => {
       test.describe.configure({ mode: 'serial' });
@@ -715,7 +715,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
         page,
       }) => {
         test.skip(true, CHO_HOP_THU);
-        // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
+        // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/account-provisioning.md
         const doiMatKhau = createPage(ChangePasswordPage);
         const matKhau = matKhauHopLe();
 
@@ -736,7 +736,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
         createPage,
         page,
       }) => {
-        // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
+        // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/account-provisioning.md
         const doiMatKhau = createPage(ChangePasswordPage);
         const matKhau = matKhauHopLe();
 
@@ -760,7 +760,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
     }) => {
       test.skip(true, CHO_HOP_THU);
-      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/test-data.md mục 2
+      // DATA-TBD: chưa chốt đường vào màn Đổi mật khẩu — docs/account-provisioning.md
       const doiMatKhau = createPage(ChangePasswordPage);
       // Dùng đúng mật khẩu hiện tại của profile `changePassword` — đó là điều kiện của case.
       const hienTai = throwawayAccounts.changePassword.password;
@@ -779,7 +779,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
   test.describe('AUTH7 — Flow đổi mật khẩu khi hết hạn', () => {
     test('AUTH7.0 vào từ email thông báo thì tới bước xác thực @high', async ({ createPage }) => {
       test.skip(true, CHO_HOP_THU);
-      // DATA-TBD: cần đọc email thông báo để bấm nút "Thay đổi mật khẩu" — mục 2 của docs/test-data.md chưa chốt công cụ hộp thư
+      // DATA-TBD: cần đọc email thông báo để bấm nút "Thay đổi mật khẩu" — mục 2 của docs/account-provisioning.md chưa chốt công cụ hộp thư
       const hetHan = createPage(PasswordExpiredPage);
 
       // step 1 — "Mở email thông báo mật khẩu hết hạn/sắp hết hạn."
@@ -879,7 +879,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
      * AUTH7.5 → AUTH7.9 — mọi case sau bước OTP.
      *
      * DATA-TBD: tới được màn "nhập mật khẩu mới" thì phải qua bước OTP, mà mục 2 của
-     * docs/test-data.md chưa chốt công cụ đọc kênh nhận mã. Năm case dưới vì thế `skip`
+     * docs/account-provisioning.md chưa chốt công cụ đọc kênh nhận mã. Năm case dưới vì thế `skip`
      * chứ không đỏ — chúng chưa có đường chạy, không phải chưa có locator.
      *
      * Dùng profile `passwordExpiredOtp`, KHÔNG dùng chung với ba case trước. Lý do bắt
@@ -889,7 +889,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
 
     test('AUTH7.5 mật khẩu mới không đạt chính sách thì báo lỗi @high', async ({ createPage }) => {
       test.skip(true, CHO_HOP_THU);
-      // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/test-data.md mục 2 chưa chốt công cụ
+      // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/account-provisioning.md chưa chốt công cụ
       const doiMatKhau = createPage(ChangePasswordPage);
 
       // step 1 — "Nhập mật khẩu mới không đạt chính sách (VD: dưới độ dài tối thiểu…)."
@@ -906,7 +906,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
 
     test('AUTH7.6 nhập lại không trùng khớp thì báo lỗi @high', async ({ createPage }) => {
       test.skip(true, CHO_HOP_THU);
-      // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/test-data.md mục 2 chưa chốt công cụ
+      // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/account-provisioning.md chưa chốt công cụ
       const doiMatKhau = createPage(ChangePasswordPage);
 
       // step 1 — "Nhập mật khẩu mới hợp lệ."
@@ -925,7 +925,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
       createPage,
     }) => {
       test.skip(true, CHO_HOP_THU);
-      // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/test-data.md mục 2 chưa chốt công cụ
+      // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/account-provisioning.md chưa chốt công cụ
       const doiMatKhau = createPage(ChangePasswordPage);
       const matKhauHienTai = throwawayAccounts.passwordExpiredOtp.password;
 
@@ -958,7 +958,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
 
       test('AUTH7.8 đổi mật khẩu thành công với dữ liệu hợp lệ @high', async ({ createPage }) => {
         test.skip(true, CHO_HOP_THU);
-        // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/test-data.md mục 2 chưa chốt công cụ
+        // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/account-provisioning.md chưa chốt công cụ
         const hetHan = await moFlowHetHan(createPage, throwawayAccounts.passwordExpiredOtp);
         matKhauMoi = matKhauHopLe();
 
@@ -989,7 +989,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
         createPage,
       }) => {
         test.skip(true, CHO_HOP_THU);
-        // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/test-data.md mục 2 chưa chốt công cụ
+        // DATA-TBD: cần đọc mã OTP từ kênh xác thực — docs/account-provisioning.md chưa chốt công cụ
         // PHỤ THUỘC: mật khẩu mới do AUTH7.8 sinh ra, nhóm này chạy serial
         const login = createPage(LoginPage);
 
@@ -1017,7 +1017,7 @@ test.describe('AUTH — Đăng nhập', { tag: '@guest' }, () => {
  * chúng sẽ fail vì không có gì để đăng xuất.
  *
  * Để ngoài như thế này, chúng chạy ở project `chromium`: có `storageState`, phụ thuộc
- * project `setup`. Xem mục 6 của `docs/test-data.md`.
+ * project `setup`. Xem mục "Ràng buộc không phải dữ liệu" của `docs/account-provisioning.md`.
  */
 test.describe('AUTH — Sau khi đăng nhập', () => {
   test('AUTH6.0 xác nhận đăng xuất thì về trang Đăng nhập @high', async ({ page }) => {

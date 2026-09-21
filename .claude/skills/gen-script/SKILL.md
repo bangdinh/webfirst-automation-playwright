@@ -1,6 +1,6 @@
 ---
 name: gen-script
-description: Sinh test script Playwright cho bo test nay - tu MOT file JSON test case trong thu muc testcase/ cua repo ra draft script, theo luat o docs/test-structure.md va docs/test-data.md. Khi goi BAT BUOC kem ten file, vi du "/gen-script Manage_Testcase.json" - khong co ten file thi dung lai va hoi. Kich hoat khi user go "Tao script", "Gen script", "/gen-script <ten-file>.json"
+description: Sinh test script Playwright cho bo test nay - tu MOT file JSON test case trong thu muc testcase/ cua repo ra draft script, theo luat o docs/test-structure.md. Khi goi BAT BUOC kem ten file, vi du "/gen-script Manage_Testcase.json" - khong co ten file thi dung lai va hoi. Kich hoat khi user go "Tao script", "Gen script", "/gen-script <ten-file>.json"
 ---
 
 # Sinh test script — `web-automation`
@@ -16,7 +16,7 @@ Skill này do **qc-kit** phát hành. Đừng sửa tại chỗ — nó bị ghi
 |---|---|---|
 | 0 | **tên file JSON** người dùng đưa → chốt đúng một file trong `testcase/` | **cổng chặn** |
 | 1 | JSON test case → đọc, đếm case | tự động |
-| 2 | → **draft script** theo luật ở `docs/test-structure.md` + `docs/test-data.md`, tên testid suy theo `docs/data-testid-convention.md` nếu có | tự động |
+| 2 | → **draft script** theo luật ở `docs/test-structure.md`, tên testid suy theo `docs/data-testid-convention.md` nếu có | tự động |
 | 3 | → **tìm locator thật**: page object có sẵn trước, gom yêu cầu gửi Dev, DOM sau | 3a·3b tự động · 3c **làm tay** |
 | 4 | → cập nhật locator vào script, test chuyển từ đỏ sang xanh | tự động |
 | 5 | → chạy verify | tự động |
@@ -119,7 +119,7 @@ thư mục thứ hai nằm cạnh cây đang có.
 Nên trước khi ghi bất kỳ file nào:
 
 ```bash
-cat docs/test-structure.md docs/test-data.md
+cat docs/test-structure.md
 cat docs/data-testid-convention.md 2>/dev/null   # có thì tốt, không có vẫn chạy
 ```
 
@@ -128,20 +128,19 @@ Mỗi file trả một câu hỏi, và mỗi câu hỏi là một chỗ generato
 | File | Trả lời | Đoán sai thì | Thiếu thì |
 |---|---|---|---|
 | `test-structure.md` | thư mục chia thế nào, màn nào ứng với class nào | sinh ra một cây thư mục thứ hai nằm cạnh cây đang có | **dừng** |
-| `test-data.md` | có sẵn trạng thái dữ liệu nào, lấy ở đâu, reset ra sao | tự bịa tên biến `.env` cho một tài khoản chưa ai cấp | **dừng** |
 | `data-testid-convention.md` | Dev đặt tên `data-testid` theo công thức nào | đặt tên không ai gắn, mà lại trông như tên thật | **chạy tiếp**, mất khả năng suy tên |
 
-File thứ ba khác hai file trên ở chỗ **thiếu nó không phải lỗi**: không có công thức thì
-mọi locator về `LOCATOR-TBD` như cũ, không hỏng gì. Hai file trên thì thiếu là dừng, vì
-đoán sai ở đó đẻ ra thư mục sai và tên biến `.env` sai — hai thứ sửa lại rất đắt.
+File thứ hai khác file đầu ở chỗ **thiếu nó không phải lỗi**: không có công thức thì mọi
+locator về `LOCATOR-TBD` như cũ, không hỏng gì. File đầu thiếu là dừng, vì đoán sai chỗ
+chia thư mục đẻ ra một cây thứ hai nằm cạnh cây đang có.
 
 | Tình huống | Xử lý |
 |---|---|
-| Có hai file bắt buộc, đã điền | Theo chúng. Chúng thắng mọi ví dụ trong skill này |
-| **Thiếu một trong hai file bắt buộc** | **Dừng.** Bảo người dùng `cp docs/<tên>.example.md docs/<tên>.md` rồi điền. Đừng đoán, đừng tự tạo file hộ |
+| Có `test-structure.md`, đã điền | Theo nó. Nó thắng mọi ví dụ trong skill này |
+| **Thiếu `test-structure.md`** | **Dừng.** Bảo người dùng `cp docs/test-structure.example.md docs/test-structure.md` rồi điền. Đừng đoán, đừng tự tạo file hộ |
 | File có nhưng **còn nguyên như bản mẫu** | Cũng dừng. File rỗng nghĩa còn tệ hơn không có: nó trông như đã có luật |
 | Màn hình của case **không có trong bảng ánh xạ** (`test-structure.md` mục 4) | Hỏi người, không tự tạo thư mục mới |
-| Case cần một **profile dữ liệu chưa khai** trong `test-data.md` | `DATA-TBD` + `test.skip(...)` — xem mục dưới |
+| Case cần một **trạng thái dữ liệu** mà bộ test không tự tạo được | `DATA-TBD` + `test.skip(...)` — xem mục dưới |
 | **Không có** `data-testid-convention.md` | Chạy tiếp, mọi locator là `LOCATOR-TBD`. Nhắc một câu ở summary rằng có file này thì suy được tên |
 
 Mọi đường dẫn (`src/pages/…`, `tests/ui/…`) và mọi tên biến `.env` trong skill này chỉ là
@@ -151,33 +150,33 @@ Mọi đường dẫn (`src/pages/…`, `tests/ui/…`) và mọi tên biến `.
 
 Phần lớn case không-phải-happy-path kiểm một TRẠNG THÁI mà bộ test không tự tạo được: tài
 khoản bị khoá, gói đã hết hạn, đơn đã huỷ, người dùng chưa có quyền. `preconditions` và
-`expected` nói ra trạng thái đó; `docs/test-data.md` nói nó có sẵn hay chưa.
+`expected` nói ra trạng thái đó; **`.env.example` của dự án** nói nó đã được khai hay chưa.
 
-**1. Đọc profile, đừng đặt tên biến.**
-Case cần trạng thái nào thì tra bảng profile ở mục 1 của `test-data.md` và dùng đúng key
-nó khai. **Không bao giờ tự nghĩ ra một tên biến `.env`** — biến bạn bịa sẽ không ai cấp,
-case sẽ `skip` vĩnh viễn, và người đọc summary không biết cái tên đó từ đâu ra.
+**1. Đọc key đã khai, đừng đặt tên mới.**
+Case cần trạng thái nào thì tìm key tương ứng trong `.env.example` và dùng đúng tên đó.
+**Không bao giờ tự nghĩ ra một tên biến `.env`** — biến bạn bịa sẽ không ai cấp, case sẽ
+`skip` vĩnh viễn, và người đọc summary không biết cái tên đó từ đâu ra.
 
 **2. Chưa khai thì dừng case đó, không dừng cả file.**
 
 ```ts
-// DATA-TBD: cần tài khoản ở trạng thái "đã khoá" — chưa có profile nào trong
-// docs/test-data.md. Case vẫn BẬT; `test.skip` bên dưới chặn nó khi chưa có dữ liệu, nên
+// DATA-TBD: cần tài khoản ở trạng thái "đã khoá" — chưa có key nào cho nó trong
+// .env.example. Case vẫn BẬT; `test.skip` bên dưới chặn nó khi chưa có dữ liệu, nên
 // nó hiện ra là "skipped" kèm lý do chứ không đỏ bừa.
 test('TB2.9 tài khoản bị khoá thì báo lỗi @high', async ({ createPage }) => {
-  test.skip(true, 'DATA-TBD: chưa có profile "locked" trong docs/test-data.md');
+  test.skip(true, 'DATA-TBD: chưa có key nào cho trạng thái "locked" trong .env.example');
 ```
 
-**3. Profile đánh dấu PHÁ HUỶ kéo theo hai nghĩa vụ.**
-Test làm đổi trạng thái của chính dữ liệu nó dùng thì:
+**3. Tài khoản bị test LÀM ĐỔI trạng thái kéo theo hai nghĩa vụ.**
+Test đổi mật khẩu, khoá tài khoản, tiêu hạn mức — tức làm đổi chính dữ liệu nó dùng — thì:
 
-- Mọi case dùng chung profile đó gói trong một `describe` chạy **`serial`** — chạy song
+- Mọi case dùng chung tài khoản đó gói trong một `describe` chạy **`serial`** — chạy song
   song thì chúng dẫm lên trạng thái của nhau và không case nào còn đúng.
-- Chép **cột "reset bằng"** của profile vào summary. Không có nó, người chạy lần hai thấy
-  test đỏ mà không biết đỏ vì môi trường hay vì sản phẩm.
+- Ghi **cách reset** vào summary. Không có nó, người chạy lần hai thấy test đỏ mà không
+  biết đỏ vì môi trường hay vì sản phẩm.
 
-**4. Kênh ngoài chưa khai thì không sinh.**
-Case cần đọc hộp thư, sinh mã TOTP, nhận SMS — nếu mục 2 của `test-data.md` chưa khai kênh
+**4. Kênh ngoài chưa có thì không sinh.**
+Case cần đọc hộp thư, sinh mã TOTP, nhận SMS — nếu dự án chưa có helper nào đọc được kênh
 đó thì đánh `DATA-TBD` và dừng. Sinh một test không có đường lấy dữ liệu là sinh một test
 không bao giờ chạy được, mà lại trông như đã xong.
 
@@ -429,8 +428,8 @@ không chặn cả file.
 | `source: "inferred"` | Không đưa vào bộ chạy. Giả định chưa ai xác nhận — luật ở `testcase-standard` |
 | `description` không đọc ra hành động nào | Mơ hồ, mô tả trạng thái, hoặc hai việc trong một dòng → bỏ case, trích nguyên văn câu đó |
 | Không biết case thuộc màn hình nào | **Không tạo page object mới**, hỏi người |
-| Case cần một **profile dữ liệu chưa khai** trong `docs/test-data.md` | `DATA-TBD` + `test.skip(true, ...)`, case vẫn bật, ghi profile còn thiếu vào summary. **Không tự đặt tên biến `.env`** |
-| Case cần **kênh ngoài** (hộp thư · TOTP · SMS) chưa khai ở mục 2 của `test-data.md` | `DATA-TBD` + `test.skip(true, ...)` — không có đường lấy dữ liệu thì test chưa chạy được, nhưng vẫn nằm trong danh sách |
+| Case cần một **trạng thái dữ liệu chưa có key** trong `.env.example` | `DATA-TBD` + `test.skip(true, ...)`, case vẫn bật, ghi thứ còn thiếu vào summary. **Không tự đặt tên biến `.env`** |
+| Case cần **kênh ngoài** (hộp thư · TOTP · SMS) mà dự án chưa đọc được | `DATA-TBD` + `test.skip(true, ...)` — không có đường lấy dữ liệu thì test chưa chạy được, nhưng vẫn nằm trong danh sách |
 | `steps` rỗng | Không có gì để sinh, bỏ qua và báo lại |
 | `expected` của step cuối rỗng | Case không khẳng định điều gì → bỏ qua và báo lại |
 | `expected` kiểu "Theo design", "Đúng UI" | Kiểm thị giác, không phải assertion chức năng → `test.fixme` |
@@ -580,10 +579,10 @@ Nguồn `testcase/Manage_Testcase.json` · 8 case · sinh 6, bỏ 2 · typecheck
 
 | Profile cần | Trạng thái | Case cần | Ghi chú |
 |---|---|---|---|
-| `locked` | tài khoản đã bị khoá | TB2.9 | chưa khai trong `docs/test-data.md` |
+| `locked` | tài khoản đã bị khoá | TB2.9 | chưa có key nào trong `.env.example` |
 | `mailbox` | hộp thư có API | TB3.3 | kênh ngoài, chưa chốt công cụ |
 
-Profile PHÁ HUỶ đã dùng thì chép luôn cột "reset bằng" vào đây — người chạy lần hai cần nó.
+Tài khoản bị test làm đổi trạng thái thì ghi luôn cách reset vào đây — người chạy lần hai cần nó.
 
 ## Cần người quyết
 
@@ -626,8 +625,8 @@ Ghi xong thì nói ra đường dẫn file. Đó là dòng cuối của một l�
   thái mất khi đóng chat — xem bước 6.
 - **Tự đặt tên biến `.env` cho một trạng thái dữ liệu chưa ai khai.** Biến bịa thì không
   ai cấp, case `skip` vĩnh viễn, và cái tên đó không truy được về đâu. Dùng đúng key mà
-  `docs/test-data.md` khai, hoặc đánh `DATA-TBD` — xem bước 2.
-- **Cho case dùng profile PHÁ HUỶ chạy song song.** Chúng dẫm lên trạng thái của nhau;
+  `.env.example` khai, hoặc đánh `DATA-TBD` — xem bước 2.
+- **Cho case dùng chung một tài khoản bị làm đổi trạng thái chạy song song.** Chúng dẫm lên nhau;
   gói trong một `describe` chạy `serial`.
 - **Coi một tên suy theo công thức là đã xác minh.** Dev chưa gắn thì phần tử đó chưa tồn
   tại; `TESTID-ĐỀ-NGHỊ` phải đỏ cho tới khi có người gắn hoặc có người đối chiếu DOM.
@@ -645,3 +644,4 @@ Ghi xong thì nói ra đường dẫn file. Đó là dòng cuối của một l�
 | Sửa `.claude/skills/*` | **qc-kit** — bản ở đây là bản sao |
 | Quyết công thức đặt tên `data-testid` | `docs/data-testid-convention.md` — **dự án** sở hữu, là hợp đồng với Dev của họ |
 | Quyết dự án chia thư mục kiểu gì | `docs/test-structure.md` — **dự án** sở hữu, kit chỉ phát hành bản mẫu |
+| Quyết tài khoản/dữ liệu nào có sẵn | `.env.example` của dự án — kit không biết sản phẩm nào cần gì |

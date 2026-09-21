@@ -64,7 +64,7 @@ export class TwoFactorSetupPage extends BasePage {
    *
    * Step 1 của case là "quét mã QR bằng app Authenticator" — không phải thao tác UI và
    * không tự động được. Bản tự động thay nó bằng: sinh mã từ TOTP secret đã cấp lúc tạo
-   * tài khoản. Chưa có secret thì case `skip`, xem mục 2 của `docs/test-data.md`.
+   * tài khoản. Chưa có secret thì case `skip`, xem mục 2 của `docs/account-provisioning.md`.
    */
   async nhapOtp(ma: string): Promise<void> {
     await this.step(`nhập mã OTP "${ma}" để bật 2FA`, async () => {

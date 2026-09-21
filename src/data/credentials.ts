@@ -13,7 +13,7 @@ import { envNumber, envVar } from 'qc-kit/config';
  *   specialAccounts   trạng thái cố định (Disabled, Expired…) — test đọc, không đổi
  *   throwawayAccounts test LÀM ĐỔI trạng thái → phải reset trước lần chạy sau
  *
- * Danh sách đầy đủ case nào cần gì: `docs/test-data.md`.
+ * Danh sách đầy đủ case nào cần gì: `docs/account-provisioning.md`.
  */
 /**
  * Giá trị đánh dấu "đã biết là cần, đang chờ người cấp" — khác hẳn để trống, vốn có

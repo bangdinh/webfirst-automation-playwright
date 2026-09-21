@@ -7,7 +7,7 @@ import { BasePage } from 'qc-kit/core';
  * **Đường vào màn này CHƯA XÁC ĐỊNH.** Màn không có field "Mật khẩu hiện tại" (AUTH5.9 nói
  * thẳng điều đó), nên nhiều khả năng nó là màn đặt lại mật khẩu đi từ link trong email —
  * tức là phải đọc được hộp thư mới tới được. Chừng nào chưa chốt, mọi case của màn này
- * `skip` với `DATA-TBD`; xem mục 2 của `docs/test-data.md`.
+ * `skip` với `DATA-TBD`; xem mục 2 của `docs/account-provisioning.md`.
  *
  * TẠM THỜI: chưa có locator thật nào — toàn bộ `LOCATOR-TBD` phải lấy từ DOM ở bước 3.
  */
@@ -97,7 +97,7 @@ export class ChangePasswordPage extends BasePage {
   override async open(): Promise<never> {
     throw new Error(
       'Chưa biết đường vào màn Đổi mật khẩu — nhiều khả năng phải đi từ link trong email. ' +
-        'Xem mục 2 của docs/test-data.md.',
+        'Xem mục 2 của docs/account-provisioning.md.',
     );
   }
 
