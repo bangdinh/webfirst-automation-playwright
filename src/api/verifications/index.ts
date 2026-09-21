@@ -1,1 +1,2 @@
-export * from './ReqresUserVerification';
+export * from './LocationVerification';
+export * from './ApiVerification';

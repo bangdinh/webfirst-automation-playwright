@@ -1,1 +1,1 @@
-export * from './ReqresUsersClient';
+export * from './LocationsClient';

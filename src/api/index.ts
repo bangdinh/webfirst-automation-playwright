@@ -9,6 +9,7 @@
  * Spec chỉ ghép chúng lại thành kịch bản. Assert riêng của một kịch bản thì ở lại spec;
  * assert "bản ghi hợp lệ trông thế nào" thì xuống `verifications/`.
  */
+export * from './ApiResource';
 export * from './models';
 export * from './clients';
 export * from './helpers';

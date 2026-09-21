@@ -24,6 +24,15 @@ case của nó. Ranh giới đó là thứ giữ cho việc nâng cấp kit khô
    `createAuthFixture`, cache session và đường dẫn `playwright/.auth` — sửa ở đây, đừng đề
    xuất đưa ngược lên kit (ADR 0004 của kit).
 
+6. **Tên định danh bằng TIẾNG ANH** — hàm, biến, class, type, hằng. Comment và message
+   lỗi vẫn tiếng Việt: người đọc chúng là đội QC.
+
+   **Chỉ áp cho code viết TỪ 21/09/2026 trở đi.** Page object, spec AUTH và
+   `credentials.ts` đang dùng tên tiếng Việt (`nhapTaiKhoan`, `guiYeuCau`, `taiKhoanVar`…) —
+   đó là code cũ, KHÔNG phải việc cần đi sửa. Đụng vào file nào vì lý do khác thì đổi tên
+   trong file đó luôn cũng được, nhưng đừng mở một đợt rename riêng: diff thuần rename
+   trên 44 test đã merge tốn công review hơn giá trị nó mang lại.
+
 ## Verify
 
 ```bash

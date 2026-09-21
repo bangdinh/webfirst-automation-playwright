@@ -16,6 +16,7 @@
     "test:api": "playwright test --project=api"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.9.0",
     "@playwright/test": ">=1.55.0",
     "@types/node": "^26.5.0",
     "qc-kit": "github:bangdinh/qc-kit#feature/RPA-4623-Add-gen-script",

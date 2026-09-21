@@ -13,6 +13,11 @@ export const environments = defineEnvironments(
   {
     beta: {
       baseURL: 'https://beta-vmsmart-next.fcam.vn',
+      // apiURL KHÔNG khai ở đây — nó đến từ `API_URL` trong .env, xem .env.example.
+      //
+      // Nếu quên khai: kit lùi `apiURL` về `baseURL`, tức mọi lời gọi API bắn vào host
+      // của app. Next.js trả HTML kèm status 200, nên test KHÔNG đỏ — nó đọc được "response",
+      // chỉ là response đó là một trang web. Đây là cách hỏng đã tốn của dự án một buổi.
       timeouts: { action: 20_000, navigation: 45_000, expect: 15_000, test: 90_000 },
     },
   },

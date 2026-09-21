@@ -1,1 +1,2 @@
-export * from './reqres.model';
+export * from './location.model';
+export * from './envelope.model';

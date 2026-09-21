@@ -150,24 +150,46 @@ màn mới phải chốt module trước khi locator kịp sinh sôi.
 chạy ở project `api` (không browser).
 
 ```
+src/api/ApiResource.ts  BỐN động từ HTTP + ghép đường dẫn — tầng chung
 src/api/models/         kiểu request/response — hợp đồng với backend
-src/api/clients/        một tài nguyên một class, kế thừa BaseApiClient của kit
+src/api/clients/        một tài nguyên = MỘT dòng khai đường dẫn
 src/api/helpers/        dựng payload, kể cả payload SAI cho test âm
 src/api/verifications/  assert thuộc về tài nguyên, bọc step() cho report
-tests/api/              spec — chỉ ghép bốn tầng trên thành kịch bản
+tests/api/              spec — chỉ ghép các tầng trên thành kịch bản
 ```
 
-**Quy ước tên:** client và verification là PascalCase theo tài nguyên
-(`UsersClient`, `UserVerification`); model là kebab-case kèm hậu tố `.model.ts`. Method của
-client đặt theo **việc nghiệp vụ**, không theo động từ HTTP.
+**Bốn động từ là bề mặt công khai** — lối Rest-Assured. `ApiResource` lo `get` · `post` ·
+`put` · `delete`; client chỉ khai nó sống ở đâu:
+
+```ts
+export class GroupsClient extends ApiResource {
+  protected readonly duongDan = '/brm-v2/api/v1/enterprises/{enterpriseId}/groups';
+}
+```
+
+`{enterpriseId}` do `ApiResource` tự điền từ `ENTERPRISE_ID` trong `.env`; gọi sang doanh
+nghiệp khác thì truyền `{ bien: { enterpriseId } }` ở từng lời gọi. Thiếu biến thì nó **ném
+ngay kèm tên biến** — để URL mang nguyên `{enterpriseId}` thì server trả 404, một lỗi không
+hề nói ra nguyên nhân.
+
+**Hai luật của `ApiResource`, cả hai đều có chủ đích:**
+
+1. **Không bao giờ ném khi status không 2xx.** `BaseApiClient` của kit mặc định ném, nên mỗi
+   endpoint phải đẻ hai method — một cho đường hạnh phúc, một cho test âm. Ở đây status luôn
+   là dữ liệu trả về, nên một method phục vụ cả hai. Đổi lại: **spec BẮT BUỘC assert status**.
+2. **Trả `{ status, body, response }` trong một lần gọi.** `APIResponse` của Playwright chỉ
+   đọc body được một lần; chỉ trả response thì mọi assert đều phải tự `await res.json()`.
+
+**Test âm phải assert ĐÚNG mã, không phải "4xx bất kỳ".** Khoảng 4xx gộp hai chuyện khác hẳn
+nhau: 400 là dữ liệu sai, 403 là thiếu quyền. Một test "thiếu trường bắt buộc" mà xanh nhờ
+403 thì chưa bao giờ chạm tới lớp validate. Dùng `ApiVerification.loi(kq, { status, error })`.
+
+**Quy ước tên:** client và verification là PascalCase theo tài nguyên (`GroupsClient`,
+`GroupVerification`); model là kebab-case kèm hậu tố `.model.ts`.
 
 **Ranh giới assert:** "một bản ghi hợp lệ trông thế nào" thuộc `verifications/` — hai chục
 test đều cần nó. "Sau khi làm X thì trạng thái phải là Y" là kịch bản, ở lại spec. Nhầm
 chiều thứ hai vào `verifications/` thì class đó phình thành nơi chứa mọi logic test.
-
-**Dựng client:** `createClient(XClient)` từ fixture của dự án — nó cấp sẵn `API_URL` làm
-baseURL và gắn bearer token. Ngoại lệ duy nhất là client gọi dịch vụ BÊN THỨ BA: dựng bằng
-`new X(request)` để không đẩy token của sản phẩm ra ngoài.
 
 
 ### FE gọi Server Action, không gọi REST — đừng test nhầm tầng
@@ -203,5 +225,11 @@ Ba cách đúng, theo thứ tự:
 Kéo theo một điều về xác thực: hop FE→BFF dùng **cookie**, không dùng `Authorization: Bearer`.
 `createApiFixture` của dự án đang gắn Bearer — đúng cho gateway, KHÔNG đúng cho Server Action.
 
-**Đầu vào:** collection Bruno đặt ở `api-collection/`, cách dịch sang bốn tầng xem
-[`api-collection/README.md`](../api-collection/README.md).
+**Gateway là HOST KHÁC app.** `baseURL` trỏ `beta-vmsmart-next.fcam.vn`, còn `apiURL` trỏ
+`beta-api-gateway.fcam.vn` — xem `src/env.ts`. Đây là chỗ đã mất một buổi vì tưởng chúng
+cùng host: gọi API qua host của app thì Next.js trả về HTML của trang, status vẫn 200.
+
+**Xác thực:** `createClient(XClient)` cấp context mang sẵn `apiURL` làm baseURL và
+`Authorization: Bearer` lấy từ phiên mà project `setup` đăng nhập bằng UI — xem
+`src/core/session-token.ts`. Token sống 30 phút, nên project `api` phải chạy SAU `setup`
+(đã nối trong `playwright.config.ts`).
