@@ -1,9 +1,9 @@
 import { unique } from 'qc-kit/utils';
 import { faker } from '../../data/faker';
-import type { CreateLocation } from '../models';
+import type { CreateLocationRequest, UpdateLocationRequest } from '../models';
 
 /**
- * Dựng payload cho `LocationsClient` — hợp lệ sẵn, override đúng trường mình quan tâm.
+ * Dựng payload cho các route Địa điểm — hợp lệ sẵn, override đúng trường mình quan tâm.
  *
  *     LocationRequestHelper.valid()                     // dùng được ngay
  *     LocationRequestHelper.valid({ name: 'Quận 1' })   // ghim một trường
@@ -26,7 +26,7 @@ export class LocationRequestHelper {
    *
    * Ghép lại: `Nha Trang 1789985376048 sc5m` — vừa duy nhất vừa đọc được.
    */
-  static valid(overrides: Partial<CreateLocation> = {}): CreateLocation {
+  static valid(overrides: Partial<CreateLocationRequest> = {}): CreateLocationRequest {
     const city = faker.location.city();
 
     return {
@@ -38,9 +38,26 @@ export class LocationRequestHelper {
     };
   }
 
+  /**
+   * Payload cho `PATCH`. Dựng riêng chứ không gọi lại `valid()`: hai endpoint hai hợp đồng,
+   * và ngày một trong hai đổi trường thì chỗ phải sửa nói ngay nó thuộc endpoint nào.
+   *
+   * Giá trị mặc định là một tên MỚI, khác lúc tạo — test sửa mà gửi lại đúng tên cũ thì
+   * assert `name === request.name` xanh kể cả khi server không sửa gì cả.
+   */
+  static validUpdate(overrides: Partial<UpdateLocationRequest> = {}): UpdateLocationRequest {
+    const city = faker.location.city();
+
+    return {
+      name: `${city}${unique('')}`.replace(/-/g, ' '),
+      description: `Cụm cửa hàng khu vực ${city} (đã sửa)`,
+      ...overrides,
+    };
+  }
+
   // --- payload SAI, dành cho test âm. Đặt tên theo CÁI SAI. ---
-  // Kiểu trả về `unknown`: payload sai thì theo định nghĩa không khớp `CreateLocation`, và ép
-  // nó khớp thì không viết được test âm nào.
+  // Kiểu trả về `unknown`: payload sai thì theo định nghĩa không khớp
+  // `CreateLocationRequest`, và ép nó khớp thì không viết được test âm nào.
 
   static missingName(): unknown {
     const { name: _dropped, ...rest } = LocationRequestHelper.valid();

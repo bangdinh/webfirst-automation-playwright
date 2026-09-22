@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import { step } from 'qc-kit/core';
-import type { ApiResult } from '../ApiResource';
+import type { ApiResult } from '../ApiClient';
 
 /**
  * Assert lớp vỏ chung của gateway — dùng cho mọi tài nguyên.

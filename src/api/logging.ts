@@ -3,7 +3,7 @@ import { envVar } from 'qc-kit/config';
 /**
  * Định dạng một lời gọi API thành khối đọc được, để dán vào log.
  *
- * Hàm thuần, tách khỏi `ApiResource` để test được mà không cần mạng — và vì phần che token
+ * Hàm thuần, tách khỏi `ApiClient` để test được mà không cần mạng — và vì phần che token
  * là thứ TUYỆT ĐỐI không được hỏng: log của bộ test đi vào artifact CI, mà `Authorization`
  * mang một JWT còn hiệu lực 30 phút. In nguyên nó ra là phát token cho bất kỳ ai đọc được
  * artifact.

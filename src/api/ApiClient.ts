@@ -6,13 +6,18 @@ import { formatApiCall } from './logging';
 import type { ApiEnvelope } from './models';
 
 /**
- * Lớp cơ sở cho mọi tài nguyên API, theo lối Rest-Assured: **bốn động từ HTTP là bề mặt
- * công khai**, tài nguyên chỉ khai đường dẫn của nó.
+ * Phương tiện gửi request — **một lớp duy nhất cho mọi tài nguyên**, theo lối Rest-Assured:
+ * động từ HTTP là bề mặt công khai, đường dẫn do `routes/` cấp.
  *
- *     const groups = createClient(GroupsClient);
- *     const result = await groups.post(GroupRequestHelper.valid());
- *     expect(result.status).toBe(201);
- *     expect(result.body.name).toBe(...);
+ *     const api = createClient(ApiClient);
+ *     const result = await api.post<LocationResponse>(LocationRoute.create(), payload);
+ *     expect(result.status).toBe(200);
+ *     expect(result.data.name).toBe(...);
+ *
+ * **Vì sao không còn một class cho mỗi tài nguyên.** Trước đây mỗi tài nguyên là một
+ * subclass chỉ để khai đúng một dòng đường dẫn. Khi `routes/` nắm hết URL thì những class
+ * đó rỗng ruột, mà một class rỗng vẫn bắt người đọc mở ra xem nó có gì. Endpoint quản lý ở
+ * `routes/`, việc gửi đi quản lý ở đây — mỗi thứ một chỗ.
  *
  * Khác `BaseApiClient` của kit ở hai điểm, cả hai đều có chủ đích:
  *
@@ -55,7 +60,7 @@ export interface ApiResult<T = unknown> {
 }
 
 /**
- * Bóc lớp vỏ. Hàm thuần nên test được không cần mạng.
+ * Bóc lớp vỏ. Hàm thuần, không chạm mạng.
  *
  * Chịu được cả thứ KHÔNG phải envelope: 204 không thân, hay trang lỗi HTML của proxy.
  * Ở hai ca đó `code` là `undefined` — và đó là tín hiệu đúng, khác hẳn việc bịa ra một mã.
@@ -70,24 +75,32 @@ export function parseEnvelope<T>(body: unknown): Pick<ApiResult<T>, 'code' | 'me
 }
 
 export interface CallOptions {
-  /** Nối vào cuối đường dẫn, ví dụ `/abc-123` cho một bản ghi cụ thể. */
-  suffix?: string;
-  /** Giá trị thay cho `{name}` trong đường dẫn. `enterpriseId` đã có sẵn, không phải truyền. */
+  /**
+   * Thay cho biến NỀN trong đường dẫn. `enterpriseId` đã có sẵn từ `.env` nên không phải
+   * truyền — chỉ dùng khi muốn gọi sang một doanh nghiệp khác.
+   *
+   * Định danh của riêng một lời gọi (`groupId`…) KHÔNG đi qua đây: nó là tham số của hàm
+   * trong `routes/`, xem `LocationRoute.update()`.
+   */
   pathParams?: Record<string, string>;
   query?: Record<string, string | number | boolean>;
   headers?: Record<string, string>;
 }
 
 /**
- * Ghép đường dẫn cuối cùng từ mẫu.
+ * Điền biến nền vào đường dẫn mà `routes/` cấp.
  *
- * Hàm thuần, export riêng để test được mà không cần mạng — đây là chỗ dễ sai nhất của cả
- * lớp: thiếu một biến thì URL mang nguyên `{enterpriseId}` và server trả 404, một lỗi
- * không hề nói ra rằng nguyên nhân là quên truyền biến.
+ * Hàm thuần, tách riêng vì đây là chỗ dễ sai nhất của cả lớp: thiếu một biến thì URL mang
+ * nguyên `{enterpriseId}` và server trả 404, một lỗi không hề nói ra rằng nguyên nhân là
+ * quên truyền biến. Nên nó phải ném NGAY tại chỗ, kèm tên biến còn thiếu.
  */
-export function buildPath(template: string, opts: CallOptions = {}, defaults: Record<string, string> = {}): string {
+export function buildPath(
+  template: string,
+  opts: CallOptions = {},
+  defaults: Record<string, string> = {},
+): string {
   const pathParams = { ...defaults, ...opts.pathParams };
-  const path = template.replace(/\{(\w+)\}/g, (_, name: string) => {
+  return template.replace(/\{(\w+)\}/g, (_, name: string) => {
     const value = pathParams[name];
     if (!value) {
       throw new Error(
@@ -97,29 +110,21 @@ export function buildPath(template: string, opts: CallOptions = {}, defaults: Re
     }
     return encodeURIComponent(value);
   });
-  return path + (opts.suffix ?? '');
 }
 
-export abstract class ApiResource extends BaseApiClient {
-  /**
-   * Mẫu đường dẫn của tài nguyên, tính từ gốc gateway. Dùng `{name}` cho phần thay đổi.
-   *
-   * Tương đối, KHÔNG có host: `API_URL` quyết định môi trường, nên đổi môi trường không
-   * phải sửa một dòng code nào.
-   */
-  protected abstract readonly path: string;
-
-  /** Biến có sẵn cho mọi tài nguyên — spec không phải truyền lại ở từng lời gọi. */
+export class ApiClient extends BaseApiClient {
+  /** Biến nền có sẵn cho mọi lời gọi — spec không phải truyền lại ở từng chỗ. */
   protected defaultPathParams(): Record<string, string> {
     return { enterpriseId: envVar('ENTERPRISE_ID', '') };
   }
 
   private async call<T>(
-    method: 'get' | 'post' | 'put' | 'delete',
+    method: 'get' | 'post' | 'put' | 'patch' | 'delete',
+    route: string,
     opts: CallOptions,
     data?: unknown,
   ): Promise<ApiResult<T>> {
-    const path = buildPath(this.path, opts, this.defaultPathParams());
+    const path = buildPath(route, opts, this.defaultPathParams());
 
     const startedAt = Date.now();
     const response = await this.send(method, path, {
@@ -152,21 +157,29 @@ export abstract class ApiResource extends BaseApiClient {
     return { status: response.status(), ...parseEnvelope<T>(body), body, response };
   }
 
-  get<T = unknown>(opts: CallOptions = {}): Promise<ApiResult<T>> {
-    return this.call<T>('get', opts);
+  get<T = unknown>(route: string, opts: CallOptions = {}): Promise<ApiResult<T>> {
+    return this.call<T>('get', route, opts);
   }
 
   /** `body` là `unknown` chứ không phải kiểu model: test âm cần gửi được payload sai. */
-  post<T = unknown>(body: unknown, opts: CallOptions = {}): Promise<ApiResult<T>> {
-    return this.call<T>('post', opts, body);
+  post<T = unknown>(route: string, body: unknown, opts: CallOptions = {}): Promise<ApiResult<T>> {
+    return this.call<T>('post', route, opts, body);
   }
 
-  put<T = unknown>(body: unknown, opts: CallOptions = {}): Promise<ApiResult<T>> {
-    return this.call<T>('put', opts, body);
+  put<T = unknown>(route: string, body: unknown, opts: CallOptions = {}): Promise<ApiResult<T>> {
+    return this.call<T>('put', route, opts, body);
   }
 
-  delete<T = unknown>(opts: CallOptions = {}): Promise<ApiResult<T>> {
-    return this.call<T>('delete', opts);
+  /**
+   * Sửa một phần bản ghi. Tách khỏi `put` vì backend phân biệt hai động từ, không phải vì
+   * tiện tay: `groups` nhận `PATCH`, gửi `PUT` vào đúng URL đó là một lời gọi khác hẳn.
+   */
+  patch<T = unknown>(route: string, body: unknown, opts: CallOptions = {}): Promise<ApiResult<T>> {
+    return this.call<T>('patch', route, opts, body);
+  }
+
+  delete<T = unknown>(route: string, opts: CallOptions = {}): Promise<ApiResult<T>> {
+    return this.call<T>('delete', route, opts);
   }
 }
 

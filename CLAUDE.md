@@ -62,13 +62,17 @@ src/env.ts        bảng môi trường — file duy nhất biết một URL
 src/core/         đăng nhập của DỰ ÁN: auth (khi nào) · session (cache cookie) · paths (.auth)
 src/fixtures.ts   cửa vào duy nhất của spec; compose fixture của kit
 src/pages/        một màn hình một class, kế thừa BasePage của kit
-tests/ui/         spec UI
+src/api/          routes (endpoint) · models · helpers · verifications + ApiClient dùng chung
+tests/ui/         spec UI          tests/api/  spec API
 ```
 
-Luật đầy đủ — chia khu vực, quy ước tên, bảng ánh xạ màn hình → thư mục — nằm ở
-[`docs/test-structure.md`](docs/test-structure.md). **Đó là nguồn duy nhất**; skill
-`gen-script` đọc thẳng file đó trước khi sinh code. Đừng mô tả lại cấu trúc ở đây, hai bản
-sẽ lệch nhau.
+Luật đầy đủ nằm ở hai file, **mỗi file là nguồn duy nhất của phần nó phụ trách**; skill
+`gen-script` đọc thẳng chúng trước khi sinh code. Đừng mô tả lại ở đây, hai bản sẽ lệch nhau.
+
+- [`docs/test-structure.md`](docs/test-structure.md) — tầng UI: chia khu vực, quy ước tên,
+  bảng ánh xạ màn hình → thư mục, module của `data-testid`.
+- [`docs/api-layer.md`](docs/api-layer.md) — tầng API: quản lý endpoint bằng `routes/`, quy
+  ước đặt tên model, ranh giới assert, luật viết spec API, Next.js Server Action.
 
 ## Skills
 
